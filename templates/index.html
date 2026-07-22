@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>CyberGuardX</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="logo">
+            🛡 CyberGuardX
+        </div>
+
+        <ul class="menu">
+            <li>Dashboard</li>
+            <li>IAM</li>
+            <li>EC2</li>
+            <li>S3</li>
+            <li>Reports</li>
+        </ul>
+    </nav>
+
+    <div class="container">
+
+        <h1>Cloud Security Dashboard</h1>
+
+        <p class="status">
+            System Status :
+            <span>Online</span>
+        </p>
+
+        <form method="POST">
+            <button type="submit">Start Scan</button>
+        </form>
+
+        <!-- ============================= -->
+        <!-- SYSTEM INFORMATION -->
+        <!-- ============================= -->
+
+        <h2>System Information</h2>
+
+        <div class="cards">
+
+            {% for key, value in system_info.items() %}
+
+            <div class="card">
+                <h3>{{ key }}</h3>
+                <p>{{ value }}</p>
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        <!-- ============================= -->
+        <!-- IAM RESULTS -->
+        <!-- ============================= -->
+
+        <h2>IAM Scan Results</h2>
+
+        <div class="cards">
+
+            <div class="card">
+                <h3>Total Users</h3>
+                <p>{{ results["Total Users"] }}</p>
+            </div>
+
+            <div class="card">
+                <h3>MFA Enabled</h3>
+                <p>{{ results["MFA Enabled"] }}</p>
+            </div>
+
+            <div class="card">
+                <h3>Admin Users</h3>
+                <p>{{ results["Admin Users"] }}</p>
+            </div>
+
+            <div class="card">
+                <h3>Inactive Users</h3>
+                <p>{{ results["Inactive Users"] }}</p>
+            </div>
+
+        </div>
+
+        <h2>Security Score</h2>
+
+        <div class="score-box {{ score_color }}">
+            {{ results["Security Score"] }}%
+        </div>
+
+    </div>
+
+    <footer>
+        © 2026 CyberGuardX | Cloud Security Dashboard
+    </footer>
+
+</body>
+
+</html>
