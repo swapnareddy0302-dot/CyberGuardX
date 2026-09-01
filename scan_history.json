@@ -1,0 +1,45 @@
+{
+    "cloud_scans": [
+        {
+            "scan_number": 1,
+            "date": "01-09-2026",
+            "time": "07:13:52 PM",
+            "score": 5,
+            "status": "High Risk",
+            "high": 4,
+            "medium": 5,
+            "low": 0
+        },
+        {
+            "scan_number": 2,
+            "date": "01-09-2026",
+            "time": "07:05:40 PM",
+            "score": 0,
+            "status": "High Risk",
+            "high": 5,
+            "medium": 4,
+            "low": 0
+        },
+        {
+            "scan_number": 3,
+            "date": "01-09-2026",
+            "time": "06:58:24 PM",
+            "score": 4,
+            "status": "High Risk",
+            "high": 5,
+            "medium": 3,
+            "low": 0
+        },
+        {
+            "scan_number": 4,
+            "date": "01-09-2026",
+            "time": "06:58:15 PM",
+            "score": 0,
+            "status": "High Risk",
+            "high": 6,
+            "medium": 4,
+            "low": 0
+        }
+    ],
+    "device_scans": []
+}

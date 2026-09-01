@@ -1,104 +1,1525 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-    <title>CyberGuardX</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CyberGuardX | Cloud Security Dashboard</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='css/style.css') }}">
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
+
 
 <body>
 
-    <nav class="navbar">
-        <div class="logo">
-            🛡 CyberGuardX
-        </div>
 
-        <ul class="menu">
-            <li>Dashboard</li>
-            <li>IAM</li>
-            <li>EC2</li>
-            <li>S3</li>
-            <li>Reports</li>
-        </ul>
-    </nav>
+<!-- ========================================= -->
+<!-- TOP NAVBAR -->
+<!-- ========================================= -->
 
-    <div class="container">
+<section class="welcome-banner">
 
-        <h1>Cloud Security Dashboard</h1>
+    <div>
 
-        <p class="status">
-            System Status :
-            <span>Online</span>
+        <h2>🛡 CyberGuardX Security Dashboard</h2>
+
+        <p>
+            Monitor cloud infrastructure, identify security risks,
+            analyze resources and generate security reports.
         </p>
-
-        <form method="POST">
-            <button type="submit">Start Scan</button>
-        </form>
-
-        <!-- ============================= -->
-        <!-- SYSTEM INFORMATION -->
-        <!-- ============================= -->
-
-        <h2>System Information</h2>
-
-        <div class="cards">
-
-            {% for key, value in system_info.items() %}
-
-            <div class="card">
-                <h3>{{ key }}</h3>
-                <p>{{ value }}</p>
-            </div>
-
-            {% endfor %}
-
-        </div>
-
-        <!-- ============================= -->
-        <!-- IAM RESULTS -->
-        <!-- ============================= -->
-
-        <h2>IAM Scan Results</h2>
-
-        <div class="cards">
-
-            <div class="card">
-                <h3>Total Users</h3>
-                <p>{{ results["Total Users"] }}</p>
-            </div>
-
-            <div class="card">
-                <h3>MFA Enabled</h3>
-                <p>{{ results["MFA Enabled"] }}</p>
-            </div>
-
-            <div class="card">
-                <h3>Admin Users</h3>
-                <p>{{ results["Admin Users"] }}</p>
-            </div>
-
-            <div class="card">
-                <h3>Inactive Users</h3>
-                <p>{{ results["Inactive Users"] }}</p>
-            </div>
-
-        </div>
-
-        <h2>Security Score</h2>
-
-        <div class="score-box {{ score_color }}">
-            {{ results["Security Score"] }}%
-        </div>
 
     </div>
 
-    <footer>
-        © 2026 CyberGuardX | Cloud Security Dashboard
-    </footer>
+
+    <div class="nav-actions">
+
+        <a href="/" class="home-btn">
+            🏠 Dashboard
+        </a>
+
+        <a href="/logout" class="logout-btn">
+            🚪 Logout
+        </a>
+
+    </div>
+
+</section>
+
+
+
+<!-- ========================================= -->
+<!-- HERO SECTION -->
+<!-- ========================================= -->
+
+<header class="hero">
+
+    <div class="hero-content">
+
+        <div class="security-badge">
+            ☁️ Cloud Security Assessment Complete
+        </div>
+
+        <h1>CyberGuardX</h1>
+
+        <p>
+            AI-Powered Cloud Security Monitoring Platform
+        </p>
+
+        <a href="/scan">
+
+            <button class="scan-btn">
+                🔍 Run New Security Scan
+            </button>
+
+        </a>
+
+    </div>
+
+</header>
+
+
+
+<!-- ========================================= -->
+<!-- MAIN CONTAINER -->
+<!-- ========================================= -->
+
+<div class="container">
+
+
+
+    <!-- ===================================== -->
+    <!-- SECURITY SCORE -->
+    <!-- ===================================== -->
+
+    <section class="score-section">
+
+        <h2>🛡 Overall Security Score</h2>
+
+
+        <div class="score-wrapper">
+
+            <div class="score-circle">
+
+                <h1>{{ score }}%</h1>
+
+                <p>{{ status }}</p>
+
+            </div>
+
+        </div>
+
+
+        <p class="score-description">
+
+            {% if score >= 80 %}
+
+                Your cloud infrastructure currently has a strong security posture.
+
+            {% elif score >= 60 %}
+
+                Your infrastructure has a moderate security risk.
+                Review the findings below to improve security.
+
+            {% else %}
+
+                Your infrastructure requires immediate security attention.
+                Review high-risk findings as soon as possible.
+
+            {% endif %}
+
+        </p>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- SECURITY OVERVIEW -->
+    <!-- ===================================== -->
+
+    <section>
+
+        <h2>📊 Security Overview</h2>
+
+
+        <div class="dashboard-grid">
+
+
+            <div class="dashboard-card iam">
+
+                <div class="icon">👤</div>
+
+                <h3>IAM Users</h3>
+
+                <h1>{{ dashboard_stats["iam_users"] }}</h1>
+
+                <p>Identity Management</p>
+
+            </div>
+
+
+
+            <div class="dashboard-card ec2">
+
+                <div class="icon">☁️</div>
+
+                <h3>EC2 Instances</h3>
+
+                <h1>{{ dashboard_stats["ec2_instances"] }}</h1>
+
+                <p>Virtual Servers</p>
+
+            </div>
+
+
+
+            <div class="dashboard-card s3">
+
+                <div class="icon">🪣</div>
+
+                <h3>S3 Buckets</h3>
+
+                <h1>{{ dashboard_stats["s3_buckets"] }}</h1>
+
+                <p>Cloud Storage</p>
+
+            </div>
+
+
+
+            <div class="dashboard-card sg">
+
+                <div class="icon">🛡️</div>
+
+                <h3>Security Groups</h3>
+
+                <h1>{{ dashboard_stats["security_groups"] }}</h1>
+
+                <p>Firewall Rules</p>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- SECURITY ANALYSIS -->
+    <!-- ===================================== -->
+
+    <section>
+
+        <h2>📈 Security Analysis</h2>
+
+
+        <div class="analysis-container">
+
+
+            <div class="chart-card">
+
+                <canvas id="securityChart"></canvas>
+
+            </div>
+
+
+
+            <div class="analysis-info">
+
+
+                <div class="info-card blue">
+
+                    <h3>Total Resources</h3>
+
+                    <h1>
+
+                        {{
+                            dashboard_stats["iam_users"]
+                            + dashboard_stats["ec2_instances"]
+                            + dashboard_stats["s3_buckets"]
+                            + dashboard_stats["security_groups"]
+                        }}
+
+                    </h1>
+
+                </div>
+
+
+
+                <div class="info-card green">
+
+                    <h3>Security Status</h3>
+
+                    <h1>{{ status }}</h1>
+
+                </div>
+
+
+
+                <div class="info-card purple">
+
+                    <h3>Security Score</h3>
+
+                    <h1>{{ score }}%</h1>
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- RISK FINDINGS -->
+    <!-- ===================================== -->
+
+    <section>
+
+        <h2>⚠️ Risk Findings</h2>
+
+
+        <div class="risk-container">
+
+
+            {% if risks %}
+
+
+                {% for risk in risks %}
+
+                <div class="risk-card
+
+                    {% if risk.level == 'High' %}
+                        high-card
+                    {% elif risk.level == 'Medium' %}
+                        medium-card
+                    {% else %}
+                        low-card
+                    {% endif %}
+
+                ">
+
+
+                    <div class="risk-icon">
+
+                        {% if risk.level == "High" %}
+                            🔴
+
+                        {% elif risk.level == "Medium" %}
+                            🟡
+
+                        {% else %}
+                            🟢
+                        {% endif %}
+
+                    </div>
+
+
+
+                    <div class="risk-content">
+
+                        <h3>{{ risk.service }}</h3>
+
+                        <p>{{ risk.message }}</p>
+
+                    </div>
+
+
+
+                    <div class="risk-level">
+
+                        {{ risk.level }}
+
+                    </div>
+
+
+                </div>
+
+                {% endfor %}
+
+
+            {% else %}
+
+
+                <div class="success-card">
+
+                    <h3>✅ Excellent Security Status</h3>
+
+                    <p>
+                        No significant security risks were detected
+                        during this scan.
+                    </p>
+
+                </div>
+
+
+            {% endif %}
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- SECURITY ALERTS -->
+    <!-- ===================================== -->
+
+    <section class="alerts-section">
+
+        <h2>🚨 Security Alerts Center</h2>
+
+
+        {% if alerts %}
+
+
+            {% for alert in alerts %}
+
+
+            <div class="alert-card {{ alert.severity|lower }}">
+
+
+                <div class="alert-top">
+
+
+                    <span class="alert-badge {{ alert.severity|lower }}">
+
+                        {{ alert.severity }}
+
+                    </span>
+
+
+                    <span class="alert-time">
+
+                        ⏰ {{ alert.time }}
+
+                    </span>
+
+
+                </div>
+
+
+                <h3>{{ alert.service }}</h3>
+
+                <p>{{ alert.message }}</p>
+
+
+            </div>
+
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+            <div class="empty-card">
+
+                No security alerts available.
+
+            </div>
+
+
+        {% endif %}
+
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- SECURITY ADVISOR -->
+    <!-- ===================================== -->
+
+    <section class="advisor-section">
+
+        <h2>🤖 CyberGuardX Security Advisor</h2>
+
+
+        <p class="section-description">
+
+            Intelligent recommendations generated from your
+            cloud security findings.
+
+        </p>
+
+
+        {% if advisor_result %}
+
+
+            {% for advice in advisor_result %}
+
+
+            <div class="advisor-item">
+
+
+                <div class="advisor-header">
+
+
+                    <h3>
+                        🧠 {{ advice.severity }}
+                    </h3>
+
+
+                    <span class="priority-badge">
+
+                        Priority: {{ advice.priority }}
+
+                    </span>
+
+
+                </div>
+
+
+                <p>
+
+                    <strong>Status:</strong>
+
+                    {{ advice.status }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>Security Issue:</strong>
+
+                    {{ advice.issue }}
+
+                </p>
+
+
+                <div class="recommendation-box">
+
+                    <strong>💡 Recommendation</strong>
+
+                    <p>
+
+                        {{ advice.recommendation }}
+
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+            <div class="empty-card">
+
+                Run a security scan to generate recommendations.
+
+            </div>
+
+
+        {% endif %}
+
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- COMPLIANCE DASHBOARD -->
+    <!-- ===================================== -->
+
+    <section class="compliance-section">
+
+        <h2>📋 Compliance Dashboard</h2>
+
+
+        {% if compliance_report %}
+
+
+            <div class="compliance-grid">
+
+
+                {% for item in compliance_report %}
+
+
+                <div class="compliance-card">
+
+
+                    <div class="compliance-header">
+
+                        <h3>{{ item.framework }}</h3>
+
+
+                        <span class="compliance-score">
+
+                            {{ item.score }}%
+
+                        </span>
+
+                    </div>
+
+
+
+                    <div class="progress-bar">
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ item.score }}%;">
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="status-row">
+
+
+                        {% if item.status == "Excellent" %}
+
+                            <span class="status excellent">
+
+                                🟢 {{ item.status }}
+
+                            </span>
+
+
+                        {% elif item.status == "Good" %}
+
+                            <span class="status good">
+
+                                🟡 {{ item.status }}
+
+                            </span>
+
+
+                        {% else %}
+
+                            <span class="status poor">
+
+                                🔴 {{ item.status }}
+
+                            </span>
+
+                        {% endif %}
+
+
+                    </div>
+
+
+                </div>
+
+
+                {% endfor %}
+
+
+            </div>
+
+
+        {% else %}
+
+
+            <div class="empty-card">
+
+                No compliance information available.
+
+            </div>
+
+
+        {% endif %}
+
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- SYSTEM INFORMATION -->
+    <!-- ===================================== -->
+
+    <section>
+
+        <h2>💻 System Information</h2>
+
+
+        <div class="system-grid">
+
+
+            <div class="system-card">
+
+                <div class="system-icon">🖥️</div>
+
+                <h3>Operating System</h3>
+
+                <p>
+                    {{ system_info["Operating System"] }}
+                </p>
+
+            </div>
+
+
+
+            <div class="system-card">
+
+                <div class="system-icon">🐍</div>
+
+                <h3>Python Version</h3>
+
+                <p>
+                    {{ system_info["Python Version"] }}
+                </p>
+
+            </div>
+
+
+
+            <div class="system-card">
+
+                <div class="system-icon">🌐</div>
+
+                <h3>Hostname</h3>
+
+                <p>
+                    {{ system_info["Hostname"] }}
+                </p>
+
+            </div>
+
+
+
+            <div class="system-card">
+
+                <div class="system-icon">⚙️</div>
+
+                <h3>Platform</h3>
+
+                <p>
+                    {{ system_info["Platform"] }}
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- IAM SECURITY SCAN -->
+    <!-- ===================================== -->
+
+    <section>
+
+        <h2>🔐 IAM Security Scan</h2>
+
+
+        <div class="table-card">
+
+
+            <table>
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>User</th>
+
+                        <th>MFA</th>
+
+                        <th>Admin</th>
+
+                        <th>Risk</th>
+
+                    </tr>
+
+                </thead>
+
+
+
+                <tbody>
+
+
+                    {% if iam_result %}
+
+
+                        {% for user in iam_result %}
+
+
+                        <tr>
+
+
+                            <!-- CORRECT KEY -->
+                            <td>{{ user.name }}</td>
+
+
+
+                            <td>
+
+                                {% if user.mfa_enabled %}
+
+                                    <span class="badge green">
+                                        Enabled
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge red">
+                                        Disabled
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+
+                            <td>
+
+                                {% if user.is_admin %}
+
+                                    <span class="badge orange">
+                                        Yes
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge green">
+                                        No
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+
+                            <td>
+
+                                <span class="badge
+
+                                    {% if user.risk == 'High' %}
+                                        red
+
+                                    {% elif user.risk == 'Medium' %}
+                                        orange
+
+                                    {% else %}
+                                        green
+                                    {% endif %}
+
+                                ">
+
+                                    {{ user.risk }}
+
+                                </span>
+
+                            </td>
+
+
+                        </tr>
+
+
+                        {% endfor %}
+
+
+                    {% else %}
+
+
+                        <tr>
+
+                            <td colspan="4">
+
+                                No IAM users scanned.
+
+                            </td>
+
+                        </tr>
+
+
+                    {% endif %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- EC2 SECURITY SCAN -->
+    <!-- ===================================== -->
+
+    <section>
+
+        <h2>☁️ EC2 Security Scan</h2>
+
+
+        <div class="table-card">
+
+
+            <table>
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>Instance</th>
+
+                        <th>Name</th>
+
+                        <th>State</th>
+
+                        <th>Public IP</th>
+
+                        <th>Risk</th>
+
+                    </tr>
+
+                </thead>
+
+
+
+                <tbody>
+
+
+                    {% if ec2_result %}
+
+
+                        {% for ec2 in ec2_result %}
+
+
+                        <tr>
+
+
+                            <!-- CORRECT KEY -->
+                            <td>{{ ec2.id }}</td>
+
+
+                            <!-- CORRECT KEY -->
+                            <td>{{ ec2.name }}</td>
+
+
+                            <!-- CORRECT KEY -->
+                            <td>{{ ec2.state }}</td>
+
+
+                            <!-- CORRECT KEY -->
+                            <td>
+
+                                {% if ec2.public_ip %}
+
+                                    {{ ec2.public_ip }}
+
+                                {% else %}
+
+                                    Not Assigned
+
+                                {% endif %}
+
+                            </td>
+
+
+
+                            <td>
+
+                                <span class="badge
+
+                                    {% if ec2.risk == 'High' %}
+                                        red
+
+                                    {% elif ec2.risk == 'Medium' %}
+                                        orange
+
+                                    {% else %}
+                                        green
+                                    {% endif %}
+
+                                ">
+
+                                    {{ ec2.risk }}
+
+                                </span>
+
+                            </td>
+
+
+                        </tr>
+
+
+                        {% endfor %}
+
+
+                    {% else %}
+
+
+                        <tr>
+
+                            <td colspan="5">
+
+                                No EC2 instances scanned.
+
+                            </td>
+
+                        </tr>
+
+
+                    {% endif %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- S3 BUCKET SECURITY -->
+    <!-- ===================================== -->
+
+    <section>
+
+        <h2>🪣 S3 Bucket Security</h2>
+
+
+        <div class="table-card">
+
+
+            <table>
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>Bucket</th>
+
+                        <th>Public Access</th>
+
+                        <th>Encryption</th>
+
+                        <th>Risk</th>
+
+                    </tr>
+
+                </thead>
+
+
+
+                <tbody>
+
+
+                    {% if s3_result %}
+
+
+                        {% for bucket in s3_result %}
+
+
+                        <tr>
+
+
+                            <!-- CORRECT KEY -->
+                            <td>{{ bucket.name }}</td>
+
+
+
+                            <td>
+
+                                {% if bucket.public_access %}
+
+                                    <span class="badge red">
+                                        Enabled
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge green">
+                                        Disabled
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+
+                            <td>
+
+                                {% if bucket.encryption %}
+
+                                    <span class="badge green">
+                                        Enabled
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge red">
+                                        Disabled
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+
+                            <td>
+
+                                <span class="badge
+
+                                    {% if bucket.risk == 'High' %}
+                                        red
+
+                                    {% elif bucket.risk == 'Medium' %}
+                                        orange
+
+                                    {% else %}
+                                        green
+                                    {% endif %}
+
+                                ">
+
+                                    {{ bucket.risk }}
+
+                                </span>
+
+                            </td>
+
+
+                        </tr>
+
+
+                        {% endfor %}
+
+
+                    {% else %}
+
+
+                        <tr>
+
+                            <td colspan="4">
+
+                                No S3 buckets scanned.
+
+                            </td>
+
+                        </tr>
+
+
+                    {% endif %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- SECURITY GROUP ANALYSIS -->
+    <!-- ===================================== -->
+
+    <section>
+
+        <h2>🌐 Security Group Analysis</h2>
+
+
+        <div class="table-card">
+
+
+            <table>
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>Security Group</th>
+
+                        <th>Port</th>
+
+                        <th>Source</th>
+
+                        <th>Risk</th>
+
+                    </tr>
+
+                </thead>
+
+
+
+                <tbody>
+
+
+                    {% if sg_result %}
+
+
+                        {% for sg in sg_result %}
+
+
+                        <tr>
+
+
+                            <!-- CORRECT KEY -->
+                            <td>{{ sg.name }}</td>
+
+
+                            <!-- CORRECT KEY -->
+                            <td>{{ sg.port }}</td>
+
+
+                            <!-- CORRECT KEY -->
+                            <td>{{ sg.source }}</td>
+
+
+
+                            <td>
+
+                                <span class="badge
+
+                                    {% if sg.risk == 'High' %}
+                                        red
+
+                                    {% elif sg.risk == 'Medium' %}
+                                        orange
+
+                                    {% else %}
+                                        green
+                                    {% endif %}
+
+                                ">
+
+                                    {{ sg.risk }}
+
+                                </span>
+
+                            </td>
+
+
+                        </tr>
+
+
+                        {% endfor %}
+
+
+                    {% else %}
+
+
+                        <tr>
+
+                            <td colspan="4">
+
+                                No security groups scanned.
+
+                            </td>
+
+                        </tr>
+
+
+                    {% endif %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- SCAN HISTORY -->
+    <!-- ===================================== -->
+
+    <section>
+
+        <h2>📜 Previous Cloud Security Scans</h2>
+
+
+        <div class="history-container">
+
+
+            {% if scan_history %}
+
+
+                {% for scan in scan_history %}
+
+
+                <div class="history-card">
+
+
+                    <div class="history-left">
+
+                        <h3>
+
+                            ☁️ Cloud Security Scan
+
+                        </h3>
+
+
+                        <p>
+
+                            📅 {{ scan.date }}
+
+                        </p>
+
+
+                        <p>
+
+                            ⏰ {{ scan.time }}
+
+                        </p>
+
+                    </div>
+
+
+
+                    <div class="history-center">
+
+
+                        <div class="history-score">
+
+                            {{ scan.score }}%
+
+                        </div>
+
+
+                        <p>
+
+                            {{ scan.status }}
+
+                        </p>
+
+
+                    </div>
+
+
+
+                    <div class="history-right">
+
+
+                        <div class="mini-risk critical">
+
+                            🔴 High: {{ scan.high }}
+
+                        </div>
+
+
+                        <div class="mini-risk medium">
+
+                            🟡 Medium: {{ scan.medium }}
+
+                        </div>
+
+
+                        <div class="mini-risk low">
+
+                            🟢 Low: {{ scan.low }}
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+
+                {% endfor %}
+
+
+            {% else %}
+
+
+                <div class="empty-history">
+
+                    📂 No previous scans available.
+
+                </div>
+
+
+            {% endif %}
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================== -->
+    <!-- DOWNLOAD REPORT -->
+    <!-- ===================================== -->
+
+    <section class="download-section">
+
+        <h2>📄 Cloud Security Report</h2>
+
+
+        <p>
+
+            Download a complete security assessment report
+            containing scan results, risks and recommendations.
+
+        </p>
+
+
+        <a href="/download-report">
+
+
+            <button class="download-btn">
+
+                ⬇ Download PDF Report
+
+            </button>
+
+
+        </a>
+
+    </section>
+
+
+
+</div>
+
+
+
+<!-- ========================================= -->
+<!-- FOOTER -->
+<!-- ========================================= -->
+
+<footer>
+
+    <div class="footer-content">
+
+        <h3>🛡 CyberGuardX</h3>
+
+
+        <p>
+
+            AI-Powered Cloud & Device Security Monitoring Platform
+
+        </p>
+
+
+        <p>
+
+            © 2026 CyberGuardX. All Rights Reserved.
+
+        </p>
+
+    </div>
+
+</footer>
+
+
+
+<!-- ========================================= -->
+<!-- CHART.JS -->
+<!-- ========================================= -->
+
+<script>
+
+    const ctx = document.getElementById("securityChart");
+
+    new Chart(ctx, {
+
+        type: "doughnut",
+
+        data: {
+
+            labels: [
+
+                "IAM Users",
+                "EC2 Instances",
+                "S3 Buckets",
+                "Security Groups"
+
+            ],
+
+            datasets: [
+
+                {
+
+                    data: [
+
+                        {{ dashboard_stats["iam_users"] }},
+                        {{ dashboard_stats["ec2_instances"] }},
+                        {{ dashboard_stats["s3_buckets"] }},
+                        {{ dashboard_stats["security_groups"] }}
+
+                    ],
+
+                    borderWidth: 2
+
+                }
+
+            ]
+
+        },
+
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+
+                    position: "bottom"
+
+                }
+
+            }
+
+        }
+
+    });
+
+</script>
+
 
 </body>
 

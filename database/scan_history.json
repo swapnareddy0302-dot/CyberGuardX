@@ -1,0 +1,522 @@
+[
+    {
+        "scan_id": 1,
+        "date": "30-07-2026",
+        "time": "07:24:44 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 2,
+        "date": "30-07-2026",
+        "time": "07:28:02 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 3,
+        "date": "30-07-2026",
+        "time": "07:41:06 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 4,
+        "date": "30-07-2026",
+        "time": "08:22:12 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 5,
+        "date": "30-07-2026",
+        "time": "08:30:43 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 6,
+        "date": "30-07-2026",
+        "time": "08:31:47 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 7,
+        "date": "30-07-2026",
+        "time": "09:12:26 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 8,
+        "date": "30-07-2026",
+        "time": "09:26:13 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 9,
+        "date": "30-07-2026",
+        "time": "09:29:30 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 10,
+        "date": "30-07-2026",
+        "time": "09:32:02 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 11,
+        "date": "30-07-2026",
+        "time": "09:39:26 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 12,
+        "date": "30-07-2026",
+        "time": "09:41:20 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 13,
+        "date": "30-07-2026",
+        "time": "09:45:34 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 14,
+        "date": "30-07-2026",
+        "time": "09:52:22 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 15,
+        "date": "30-07-2026",
+        "time": "09:55:28 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 16,
+        "date": "30-07-2026",
+        "time": "09:58:04 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 17,
+        "date": "30-07-2026",
+        "time": "10:01:07 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 18,
+        "date": "30-07-2026",
+        "time": "10:03:40 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 19,
+        "date": "01-08-2026",
+        "time": "06:27:38 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 20,
+        "date": "01-08-2026",
+        "time": "06:54:47 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 21,
+        "date": "01-08-2026",
+        "time": "07:15:44 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 22,
+        "date": "01-08-2026",
+        "time": "07:17:49 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 23,
+        "date": "01-08-2026",
+        "time": "07:31:04 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 24,
+        "date": "01-08-2026",
+        "time": "07:38:02 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 25,
+        "date": "02-08-2026",
+        "time": "11:00:48 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 26,
+        "date": "02-08-2026",
+        "time": "11:35:21 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 27,
+        "date": "02-08-2026",
+        "time": "11:36:02 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 28,
+        "date": "02-08-2026",
+        "time": "11:38:31 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 29,
+        "date": "02-08-2026",
+        "time": "11:45:31 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 30,
+        "date": "03-08-2026",
+        "time": "09:46:31 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 31,
+        "date": "03-08-2026",
+        "time": "10:13:49 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 32,
+        "date": "03-08-2026",
+        "time": "10:22:22 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 33,
+        "date": "03-08-2026",
+        "time": "10:27:54 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 34,
+        "date": "08-08-2026",
+        "time": "10:45:17 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 35,
+        "date": "08-08-2026",
+        "time": "11:25:03 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 36,
+        "date": "08-08-2026",
+        "time": "11:36:27 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 37,
+        "date": "08-08-2026",
+        "time": "11:49:24 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 38,
+        "date": "09-08-2026",
+        "time": "11:38:38 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 39,
+        "date": "13-08-2026",
+        "time": "10:34:23 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 40,
+        "date": "13-08-2026",
+        "time": "10:34:29 AM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 41,
+        "date": "13-08-2026",
+        "time": "07:24:40 PM",
+        "score": 42,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 42,
+        "date": "29-08-2026",
+        "time": "12:20:02 PM",
+        "score": 80,
+        "status": "Secure",
+        "critical": 2,
+        "medium": 0,
+        "low": 0
+    },
+    {
+        "scan_id": 43,
+        "date": "29-08-2026",
+        "time": "12:24:28 PM",
+        "score": 100,
+        "status": "Excellent",
+        "critical": 0,
+        "medium": 0,
+        "low": 0
+    },
+    {
+        "scan_id": 44,
+        "date": "29-08-2026",
+        "time": "12:24:28 PM",
+        "score": 100,
+        "status": "Excellent",
+        "critical": 0,
+        "medium": 0,
+        "low": 0
+    },
+    {
+        "scan_id": 45,
+        "date": "29-08-2026",
+        "time": "12:24:39 PM",
+        "score": 100,
+        "status": "Excellent",
+        "critical": 0,
+        "medium": 0,
+        "low": 0
+    },
+    {
+        "scan_id": 46,
+        "date": "29-08-2026",
+        "time": "12:47:17 PM",
+        "score": 100,
+        "status": "Excellent",
+        "critical": 0,
+        "medium": 0,
+        "low": 0
+    },
+    {
+        "scan_id": 47,
+        "date": "29-08-2026",
+        "time": "12:50:35 PM",
+        "score": 100,
+        "status": "Excellent",
+        "critical": 0,
+        "medium": 0,
+        "low": 0
+    },
+    {
+        "scan_id": 48,
+        "date": "01-09-2026",
+        "time": "06:27:27 PM",
+        "score": 100,
+        "status": "Excellent",
+        "critical": 0,
+        "medium": 0,
+        "low": 0
+    },
+    {
+        "scan_id": 49,
+        "date": "01-09-2026",
+        "time": "06:28:34 PM",
+        "score": 100,
+        "status": "Excellent",
+        "critical": 0,
+        "medium": 0,
+        "low": 0
+    },
+    {
+        "scan_id": 50,
+        "date": "01-09-2026",
+        "time": "06:28:48 PM",
+        "score": 100,
+        "status": "Excellent",
+        "critical": 0,
+        "medium": 0,
+        "low": 0
+    },
+    {
+        "scan_id": 51,
+        "date": "01-09-2026",
+        "time": "06:43:10 PM",
+        "score": 34,
+        "status": "High Risk",
+        "critical": 4,
+        "medium": 2,
+        "low": 0
+    },
+    {
+        "scan_id": 52,
+        "date": "01-09-2026",
+        "time": "06:43:13 PM",
+        "score": 24,
+        "status": "High Risk",
+        "critical": 5,
+        "medium": 2,
+        "low": 0
+    }
+]

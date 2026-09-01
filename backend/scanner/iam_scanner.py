@@ -1,42 +1,78 @@
-from backend.data.users import users
+import random
 
 
 class IAMScanner:
 
-    def __init__(self):
-        print("IAM Scanner Initialized")
-
     def scan(self):
 
-        print("Scanning IAM...")
+        users = [
 
-        total_users = len(users)
+            {
+                "name": "admin-user",
+                "mfa_enabled": False,
+                "is_admin": True,
+                "status": "Active",
+                "risk": "High"
+            },
 
-        mfa_enabled = 0
-        admin_users = 0
-        inactive_users = 0
+            {
+                "name": "developer-team",
+                "mfa_enabled": True,
+                "is_admin": False,
+                "status": "Active",
+                "risk": "Low"
+            },
 
-        for user in users:
+            {
+                "name": "database-admin",
+                "mfa_enabled": False,
+                "is_admin": True,
+                "status": "Active",
+                "risk": "High"
+            },
 
-            if user["mfa_enabled"]:
-                mfa_enabled += 1
+            {
+                "name": "cloud-engineer",
+                "mfa_enabled": True,
+                "is_admin": False,
+                "status": "Active",
+                "risk": "Low"
+            },
 
-            if user["is_admin"]:
-                admin_users += 1
+            {
+                "name": "security-auditor",
+                "mfa_enabled": True,
+                "is_admin": False,
+                "status": "Active",
+                "risk": "Low"
+            },
 
-            if not user["is_active"]:
-                inactive_users += 1
+            {
+                "name": "backup-service",
+                "mfa_enabled": False,
+                "is_admin": False,
+                "status": "Inactive",
+                "risk": "Medium"
+            },
 
-        security_score = int((mfa_enabled / total_users) * 100)
+            {
+                "name": "temporary-user",
+                "mfa_enabled": False,
+                "is_admin": False,
+                "status": "Inactive",
+                "risk": "Medium"
+            },
 
-        results = {
-            "Total Users": total_users,
-            "MFA Enabled": mfa_enabled,
-            "Admin Users": admin_users,
-            "Inactive Users": inactive_users,
-            "Security Score": security_score
-        }
+            {
+                "name": "operations-team",
+                "mfa_enabled": True,
+                "is_admin": False,
+                "status": "Active",
+                "risk": "Low"
+            }
 
-        return results
+        ]
 
-       
+        count = random.randint(4, 7)
+
+        return random.sample(users, count)

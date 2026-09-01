@@ -1,0 +1,1025 @@
+
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    PageBreak,
+    KeepTogether
+)
+
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.colors import HexColor
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+
+from flask import send_file
+
+import io
+from datetime import datetime
+
+
+# ============================================================
+# STYLES
+# ============================================================
+
+styles = getSampleStyleSheet()
+
+title_style = ParagraphStyle(
+    "CustomTitle",
+    parent=styles["Heading1"],
+    alignment=TA_CENTER,
+    textColor=HexColor("#0B5394"),
+    fontSize=22,
+    leading=26,
+    spaceBefore=4,
+    spaceAfter=8
+)
+
+heading_style = ParagraphStyle(
+    "CustomHeading",
+    parent=styles["Heading2"],
+    textColor=HexColor("#0B5394"),
+    fontSize=15,
+    leading=18,
+    spaceBefore=6,
+    spaceAfter=7
+)
+
+normal_style = ParagraphStyle(
+    "CustomNormal",
+    parent=styles["BodyText"],
+    fontSize=9,
+    leading=13,
+    spaceAfter=5
+)
+
+small_style = ParagraphStyle(
+    "Small",
+    parent=styles["BodyText"],
+    fontSize=8,
+    leading=10
+)
+
+table_cell_style = ParagraphStyle(
+    "TableCell",
+    parent=styles["BodyText"],
+    fontSize=8,
+    leading=10,
+    alignment=TA_CENTER
+)
+
+table_header_style = ParagraphStyle(
+    "TableHeader",
+    parent=styles["BodyText"],
+    fontSize=8,
+    leading=10,
+    alignment=TA_CENTER,
+    textColor=colors.white
+)
+
+
+# ============================================================
+# COMMON TABLE FUNCTION
+# ============================================================
+
+def create_table(data, column_widths=None):
+
+    formatted_data = []
+
+    for row_index, row in enumerate(data):
+
+        formatted_row = []
+
+        for cell in row:
+
+            text = str(cell)
+
+            if row_index == 0:
+                formatted_row.append(
+                    Paragraph(
+                        f"<b>{text}</b>",
+                        table_header_style
+                    )
+                )
+            else:
+                formatted_row.append(
+                    Paragraph(
+                        text,
+                        table_cell_style
+                    )
+                )
+
+        formatted_data.append(formatted_row)
+
+    table = Table(
+        formatted_data,
+        colWidths=column_widths,
+        repeatRows=1,
+        hAlign="CENTER"
+    )
+
+    table.setStyle(
+        TableStyle(
+            [
+                # Header
+                ("BACKGROUND", (0, 0), (-1, 0), HexColor("#0B5394")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+
+                # Alignment
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+
+                # Grid
+                ("GRID", (0, 0), (-1, -1), 0.6, colors.grey),
+
+                # Body
+                ("BACKGROUND", (0, 1), (-1, -1), HexColor("#F8FBFF")),
+
+                # Padding
+                ("TOPPADDING", (0, 0), (-1, 0), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
+
+                ("TOPPADDING", (0, 1), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 1), (-1, -1), 5),
+            ]
+        )
+    )
+
+    return table
+
+
+# ============================================================
+# PDF GENERATOR
+# ============================================================
+
+def generate_pdf(
+    security_score,
+    system_info,
+    iam_result,
+    ec2_result,
+    s3_result,
+    sg_result,
+    advisor_result,
+    scan_history
+):
+
+    buffer = io.BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        rightMargin=35,
+        leftMargin=35,
+        topMargin=35,
+        bottomMargin=35,
+        title="CyberGuardX Cloud Security Assessment Report"
+    )
+
+    story = []
+
+
+    # ========================================================
+    # RISK STATUS
+    # ========================================================
+
+    if security_score >= 80:
+        status = "LOW RISK"
+
+    elif security_score >= 60:
+        status = "MEDIUM RISK"
+
+    else:
+        status = "HIGH RISK"
+
+
+    # ========================================================
+    # COVER PAGE
+    # ========================================================
+
+    story.append(
+        Spacer(1, 0.2 * inch)
+    )
+
+    story.append(
+        Paragraph(
+            "CyberGuardX",
+            title_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "Cloud Security Assessment Report",
+            heading_style
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.15 * inch)
+    )
+
+    story.append(
+        Paragraph(
+            "<b>Generated By:</b> CyberGuardX v2.0",
+            normal_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "<b>Report ID:</b> CGX-20260803-001",
+            normal_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            f"<b>Date:</b> "
+            f"{datetime.now().strftime('%d %B %Y %I:%M %p')}",
+            normal_style
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.2 * inch)
+    )
+
+
+    # ========================================================
+    # SECURITY SCORE BOX
+    # ========================================================
+
+    score_header = Paragraph(
+        "<b>OVERALL SECURITY SCORE</b>",
+        ParagraphStyle(
+            "ScoreHeader",
+            parent=normal_style,
+            alignment=TA_CENTER,
+            textColor=colors.white,
+            fontSize=11,
+            leading=13
+        )
+    )
+
+    score_number = Paragraph(
+        f"<b>{security_score}%</b>",
+        ParagraphStyle(
+            "ScoreNumber",
+            parent=normal_style,
+            alignment=TA_CENTER,
+            fontSize=20,
+            leading=24,
+            textColor=HexColor("#0B5394")
+        )
+    )
+
+    score_table = Table(
+        [
+            [score_header],
+            [score_number]
+        ],
+        colWidths=[360],
+        rowHeights=[28, 52],
+        hAlign="CENTER"
+    )
+
+    score_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), HexColor("#0B5394")),
+                ("BACKGROUND", (0, 1), (-1, 1), HexColor("#EAF2FF")),
+
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+
+                ("BOX", (0, 0), (-1, -1), 1, HexColor("#0B5394")),
+
+                ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4)
+            ]
+        )
+    )
+
+    story.append(score_table)
+
+    story.append(
+        Spacer(1, 0.15 * inch)
+    )
+
+    story.append(
+        Paragraph(
+            f"<b>Status:</b> {status}",
+            ParagraphStyle(
+                "StatusStyle",
+                parent=heading_style,
+                alignment=TA_CENTER,
+                fontSize=14
+            )
+        )
+    )
+
+    story.append(PageBreak())
+
+
+    # ========================================================
+    # EXECUTIVE SUMMARY
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "Executive Summary",
+            title_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            """
+            This report provides an assessment of the cloud infrastructure
+            based on IAM users, EC2 instances, S3 buckets and Security Groups.
+            CyberGuardX analyzes cloud resources, identifies potential risks,
+            calculates an overall security score, and generates recommendations
+            to improve the cloud security posture.
+            """,
+            normal_style
+        )
+    )
+
+
+    # ========================================================
+    # INFRASTRUCTURE SUMMARY
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "Infrastructure Summary",
+            heading_style
+        )
+    )
+
+    resource_table = create_table(
+        [
+            ["Resource", "Count"],
+            ["IAM Users", len(iam_result)],
+            ["EC2 Instances", len(ec2_result)],
+            ["S3 Buckets", len(s3_result)],
+            ["Security Groups", len(sg_result)]
+        ],
+        [250, 110]
+    )
+
+    story.append(resource_table)
+
+    story.append(
+        Spacer(1, 0.15 * inch)
+    )
+
+
+    # ========================================================
+    # SECURITY SUMMARY
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "Security Summary",
+            heading_style
+        )
+    )
+
+    summary_table = create_table(
+        [
+            ["Metric", "Value"],
+            ["Overall Score", f"{security_score}%"],
+            ["Risk Status", status],
+            [
+                "Scan Date",
+                datetime.now().strftime("%d-%m-%Y")
+            ]
+        ],
+        [220, 140]
+    )
+
+    story.append(summary_table)
+
+    story.append(PageBreak())
+
+
+    # ========================================================
+    # SYSTEM INFORMATION
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "System Information",
+            title_style
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.05 * inch)
+    )
+
+    system_data = [
+        ["Property", "Value"]
+    ]
+
+    if system_info:
+
+        for key, value in system_info.items():
+
+            system_data.append(
+                [
+                    str(key),
+                    str(value)
+                ]
+            )
+
+    else:
+
+        system_data.append(
+            ["Status", "No system information available"]
+        )
+
+    story.append(
+        create_table(
+            system_data,
+            [180, 180]
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.2 * inch)
+    )
+
+
+    # ========================================================
+    # IAM SECURITY ASSESSMENT
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "IAM Security Assessment",
+            title_style
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.05 * inch)
+    )
+
+    iam_table = [
+        [
+            "User",
+            "Admin",
+            "MFA",
+            "Status",
+            "Recommendation"
+        ]
+    ]
+
+    for user in iam_result:
+
+        mfa_enabled = user.get("mfa_enabled", False)
+        is_admin = user.get("is_admin", False)
+
+        recommendation = "No Action Required"
+
+        if not mfa_enabled:
+
+            recommendation = "Enable MFA"
+
+        elif is_admin:
+
+            recommendation = "Review Admin Access"
+
+        iam_table.append(
+            [
+                str(user.get("name", "Unknown")),
+                "Yes" if is_admin else "No",
+                "Enabled" if mfa_enabled else "Disabled",
+                "Active" if user.get("active", False) else "Inactive",
+                recommendation
+            ]
+        )
+
+    if len(iam_table) == 1:
+
+        iam_table.append(
+            [
+                "No users",
+                "-",
+                "-",
+                "-",
+                "No IAM data available"
+            ]
+        )
+
+    story.append(
+        create_table(
+            iam_table,
+            [85, 50, 60, 60, 105]
+        )
+    )
+
+    story.append(PageBreak())
+
+
+    # ========================================================
+    # EC2 SECURITY ASSESSMENT
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "EC2 Security Assessment",
+            title_style
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.05 * inch)
+    )
+
+    ec2_table = [
+        [
+            "Instance ID",
+            "Name",
+            "State",
+            "Risk",
+            "Recommendation"
+        ]
+    ]
+
+    for instance in ec2_result:
+
+        risk = instance.get("risk", "Low")
+
+        recommendation = "No Action Required"
+
+        if risk == "Medium":
+
+            recommendation = "Review Configuration"
+
+        elif risk == "High":
+
+            recommendation = "Immediate Investigation"
+
+        ec2_table.append(
+            [
+                str(instance.get("id", "Unknown")),
+                str(instance.get("name", "Unknown")),
+                str(instance.get("state", "Unknown")),
+                risk,
+                recommendation
+            ]
+        )
+
+    if len(ec2_table) == 1:
+
+        ec2_table.append(
+            [
+                "No instances",
+                "-",
+                "-",
+                "-",
+                "No EC2 data available"
+            ]
+        )
+
+    story.append(
+        create_table(
+            ec2_table,
+            [75, 90, 55, 50, 90]
+        )
+    )
+
+    story.append(PageBreak())
+
+
+    # ========================================================
+    # S3 SECURITY ASSESSMENT
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "S3 Security Assessment",
+            title_style
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.05 * inch)
+    )
+
+    s3_table = [
+        [
+            "Bucket",
+            "Risk",
+            "Recommendation"
+        ]
+    ]
+
+    for bucket in s3_result:
+
+        risk = bucket.get("risk", "Low")
+
+        recommendation = "No Action Required"
+
+        if risk == "High":
+
+            recommendation = "Restrict Public Access"
+
+        elif risk == "Medium":
+
+            recommendation = "Review Bucket Permissions"
+
+        s3_table.append(
+            [
+                str(bucket.get("name", "Unknown")),
+                risk,
+                recommendation
+            ]
+        )
+
+    if len(s3_table) == 1:
+
+        s3_table.append(
+            [
+                "No buckets",
+                "-",
+                "No S3 data available"
+            ]
+        )
+
+    story.append(
+        create_table(
+            s3_table,
+            [150, 60, 190]
+        )
+    )
+
+    story.append(PageBreak())
+
+
+    # ========================================================
+    # SECURITY GROUP ASSESSMENT
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "Security Group Assessment",
+            title_style
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.05 * inch)
+    )
+
+    sg_table = [
+        [
+            "Group",
+            "Port",
+            "Source",
+            "Risk",
+            "Recommendation"
+        ]
+    ]
+
+    for sg in sg_result:
+
+        port = str(sg.get("port", ""))
+        source = str(sg.get("source", ""))
+        risk = sg.get("risk", "Low")
+
+        recommendation = "No Action Required"
+
+        if port == "22" and source == "0.0.0.0/0":
+
+            recommendation = "Restrict SSH Access"
+
+        elif risk == "High":
+
+            recommendation = "Review Firewall Rules"
+
+        sg_table.append(
+            [
+                str(sg.get("name", "Unknown")),
+                port,
+                source,
+                risk,
+                recommendation
+            ]
+        )
+
+    if len(sg_table) == 1:
+
+        sg_table.append(
+            [
+                "No groups",
+                "-",
+                "-",
+                "-",
+                "No Security Group data"
+            ]
+        )
+
+    story.append(
+        create_table(
+            sg_table,
+            [90, 45, 90, 50, 125]
+        )
+    )
+
+    story.append(PageBreak())
+
+
+    # ========================================================
+    # SECURITY ADVISOR
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "Security Advisor",
+            title_style
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.05 * inch)
+    )
+
+    if advisor_result:
+
+        if isinstance(advisor_result, dict):
+
+            advisor_rows = [
+                [
+                    "Category",
+                    "Severity",
+                    "Recommendation"
+                ]
+            ]
+
+            for category, details in advisor_result.items():
+
+                if isinstance(details, dict):
+
+                    severity = details.get(
+                        "severity",
+                        details.get("risk", "Info")
+                    )
+
+                    recommendation = details.get(
+                        "recommendation",
+                        details.get("message", str(details))
+                    )
+
+                else:
+
+                    severity = "Info"
+                    recommendation = str(details)
+
+                advisor_rows.append(
+                    [
+                        str(category),
+                        str(severity),
+                        str(recommendation)
+                    ]
+                )
+
+            story.append(
+                create_table(
+                    advisor_rows,
+                    [100, 70, 240]
+                )
+            )
+
+        elif isinstance(advisor_result, list):
+
+            advisor_rows = [
+                [
+                    "Finding",
+                    "Severity",
+                    "Recommendation"
+                ]
+            ]
+
+            for item in advisor_result:
+
+                if isinstance(item, dict):
+
+                    finding = item.get(
+                        "finding",
+                        item.get(
+                            "category",
+                            "Security Finding"
+                        )
+                    )
+
+                    severity = item.get(
+                        "severity",
+                        item.get(
+                            "risk",
+                            "Info"
+                        )
+                    )
+
+                    recommendation = item.get(
+                        "recommendation",
+                        item.get(
+                            "message",
+                            "Review finding"
+                        )
+                    )
+
+                    advisor_rows.append(
+                        [
+                            str(finding),
+                            str(severity),
+                            str(recommendation)
+                        ]
+                    )
+
+                else:
+
+                    advisor_rows.append(
+                        [
+                            "Security Finding",
+                            "Info",
+                            str(item)
+                        ]
+                    )
+
+            story.append(
+                create_table(
+                    advisor_rows,
+                    [100, 70, 240]
+                )
+            )
+
+        else:
+
+            story.append(
+                Paragraph(
+                    str(advisor_result),
+                    normal_style
+                )
+            )
+
+    else:
+
+        story.append(
+            Paragraph(
+                "No security advisor findings available.",
+                normal_style
+            )
+        )
+
+    story.append(PageBreak())
+
+
+    # ========================================================
+    # SCAN HISTORY
+    # ========================================================
+
+    story.append(
+        Paragraph(
+            "Scan History",
+            title_style
+        )
+    )
+
+    story.append(
+        Spacer(1, 0.05 * inch)
+    )
+
+    if scan_history:
+
+        history_table = [
+            [
+                "Scan",
+                "Date",
+                "Time",
+                "Score",
+                "Status"
+            ]
+        ]
+
+        for index, scan in enumerate(
+            scan_history,
+            start=1
+        ):
+
+            if isinstance(scan, dict):
+
+                scan_id = scan.get(
+                    "scan_id",
+                    index
+                )
+
+                date = scan.get(
+                    "date",
+                    "N/A"
+                )
+
+                time = scan.get(
+                    "time",
+                    "N/A"
+                )
+
+                score = scan.get(
+                    "score",
+                    scan.get(
+                        "security_score",
+                        "N/A"
+                    )
+                )
+
+                scan_status = scan.get(
+                    "status",
+                    scan.get(
+                        "risk_status",
+                        "N/A"
+                    )
+                )
+
+            else:
+
+                scan_id = index
+                date = "N/A"
+                time = "N/A"
+                score = str(scan)
+                scan_status = "Recorded"
+
+            history_table.append(
+                [
+                    f"Scan {scan_id}",
+                    str(date),
+                    str(time),
+                    str(score),
+                    str(scan_status)
+                ]
+            )
+
+        story.append(
+            create_table(
+                history_table,
+                [65, 75, 85, 55, 80]
+            )
+        )
+
+    else:
+
+        story.append(
+            Paragraph(
+                "No previous scan history available.",
+                normal_style
+            )
+        )
+
+
+    # ========================================================
+    # FINAL FOOTER
+    # ========================================================
+
+    story.append(
+        Spacer(1, 0.2 * inch)
+    )
+
+    footer_style = ParagraphStyle(
+        "Footer",
+        parent=small_style,
+        alignment=TA_CENTER,
+        textColor=HexColor("#666666"),
+        spaceBefore=5
+    )
+
+    story.append(
+        Paragraph(
+            "<b>CyberGuardX</b> — Cloud Security Monitoring "
+            "and Risk Assessment Platform",
+            footer_style
+        )
+    )
+
+
+    # ========================================================
+    # BUILD PDF
+    # ========================================================
+
+    doc.build(story)
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        download_name="CyberGuardX_Report.pdf",
+        as_attachment=True,
+        mimetype="application/pdf"
+    )
+
