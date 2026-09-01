@@ -1,0 +1,13 @@
+venv/
+.venv/
+
+__pycache__/
+*.py[cod]
+
+*.db
+
+scan_history.json
+database/scan_history.json
+
+.env
+.vscode/
