@@ -1,24 +1,24 @@
-# ============================================================
-# CyberGuardX
-# Scan History Manager
-# Cloud + Device Scan History
-# ============================================================
-
 import json
 import os
 from datetime import datetime
 
+from database import get_db_connection
 
-HISTORY_FILE = "scan_history.json"
 
 MAX_HISTORY = 4
 
 
-# ============================================================
-# CREATE EMPTY HISTORY
-# ============================================================
+def _using_postgres():
 
-def empty_history():
+    return bool(
+        os.environ.get(
+            "DATABASE_URL",
+            ""
+        ).strip()
+    )
+
+
+def _empty_history():
 
     return {
         "cloud_scans": [],
@@ -27,82 +27,85 @@ def empty_history():
 
 
 # ============================================================
-# LOAD COMPLETE HISTORY
+# POSTGRESQL HISTORY TABLE
+# ============================================================
+
+def _create_history_table():
+
+    connection = get_db_connection()
+
+    try:
+
+        if connection.is_postgres:
+
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS scan_history (
+                    id SERIAL PRIMARY KEY,
+                    scan_type TEXT NOT NULL,
+                    scan_date TEXT NOT NULL,
+                    scan_time TEXT NOT NULL,
+                    score INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    high_risks INTEGER NOT NULL DEFAULT 0,
+                    medium_risks INTEGER NOT NULL DEFAULT 0,
+                    low_risks INTEGER NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP
+                    DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+
+            connection.commit()
+
+    finally:
+
+        connection.close()
+
+
+# ============================================================
+# LOAD HISTORY
 # ============================================================
 
 def load_history():
 
-    if not os.path.exists(HISTORY_FILE):
-        return empty_history()
+    if _using_postgres():
+
+        return {
+            "cloud_scans": get_history(),
+            "device_scans": get_device_history()
+        }
+
+    history_file = "scan_history.json"
+
+    if not os.path.exists(history_file):
+
+        return _empty_history()
 
     try:
 
         with open(
-            HISTORY_FILE,
+            history_file,
             "r",
             encoding="utf-8"
         ) as file:
 
             history = json.load(file)
 
-
-        # ----------------------------------------------------
-        # SUPPORT OLD LIST FORMAT
-        # ----------------------------------------------------
-
         if isinstance(history, list):
 
             history = {
-
                 "cloud_scans": history[:MAX_HISTORY],
-
                 "device_scans": []
-
             }
-
-
-        # ----------------------------------------------------
-        # VALIDATE HISTORY
-        # ----------------------------------------------------
-
-        if not isinstance(history, dict):
-
-            return empty_history()
-
 
         if "cloud_scans" not in history:
 
             history["cloud_scans"] = []
 
-
         if "device_scans" not in history:
 
             history["device_scans"] = []
-
-
-        # ----------------------------------------------------
-        # MAKE SURE VALUES ARE LISTS
-        # ----------------------------------------------------
-
-        if not isinstance(
-            history["cloud_scans"],
-            list
-        ):
-
-            history["cloud_scans"] = []
-
-
-        if not isinstance(
-            history["device_scans"],
-            list
-        ):
-
-            history["device_scans"] = []
-
-
-        # ----------------------------------------------------
-        # KEEP ONLY LATEST SCANS
-        # ----------------------------------------------------
 
         history["cloud_scans"] = (
             history["cloud_scans"][:MAX_HISTORY]
@@ -112,68 +115,73 @@ def load_history():
             history["device_scans"][:MAX_HISTORY]
         )
 
-
         return history
 
+    except Exception:
 
-    except (
-        json.JSONDecodeError,
-        OSError,
-        TypeError,
-        ValueError
-    ):
-
-        return empty_history()
+        return _empty_history()
 
 
 # ============================================================
-# SAVE COMPLETE HISTORY
+# SAVE CLOUD SCAN
 # ============================================================
 
-def save_history(history):
-
-    try:
-
-        with open(
-            HISTORY_FILE,
-            "w",
-            encoding="utf-8"
-        ) as file:
-
-            json.dump(
-                history,
-                file,
-                indent=4
-            )
-
-        return True
-
-    except OSError:
-
-        return False
-
-
-# ============================================================
-# CREATE SCAN RECORD
-# ============================================================
-
-def create_scan_record(
-
+def save_scan(
     score,
-
     status,
-
     high_risks,
-
     medium_risks,
-
     low_risks
-
 ):
 
     now = datetime.now()
 
-    return {
+    if _using_postgres():
+
+        _create_history_table()
+
+        connection = get_db_connection()
+
+        try:
+
+            connection.execute(
+                """
+                INSERT INTO scan_history
+                (
+                    scan_type,
+                    scan_date,
+                    scan_time,
+                    score,
+                    status,
+                    high_risks,
+                    medium_risks,
+                    low_risks
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "cloud",
+                    now.strftime("%d-%m-%Y"),
+                    now.strftime("%I:%M:%S %p"),
+                    int(score),
+                    str(status),
+                    int(high_risks),
+                    int(medium_risks),
+                    int(low_risks)
+                )
+            )
+
+            connection.commit()
+
+        finally:
+
+            connection.close()
+
+        return
+
+    history = load_history()
+
+    new_scan = {
 
         "scan_number": 0,
 
@@ -185,217 +193,223 @@ def create_scan_record(
             "%I:%M:%S %p"
         ),
 
-        "score": int(score),
+        "score": score,
 
-        "status": str(status),
+        "status": status,
 
-        "high": int(high_risks),
+        "high": high_risks,
 
-        "medium": int(medium_risks),
+        "medium": medium_risks,
 
-        "low": int(low_risks)
-
+        "low": low_risks
     }
-
-
-# ============================================================
-# UPDATE SCAN NUMBERS
-# ============================================================
-
-def update_scan_numbers(scans):
-
-    for index, scan in enumerate(
-        scans,
-        start=1
-    ):
-
-        if isinstance(scan, dict):
-
-            scan["scan_number"] = index
-
-    return scans
-
-
-# ============================================================
-# SAVE CLOUD SECURITY SCAN
-# ============================================================
-
-def save_scan(
-
-    score,
-
-    status,
-
-    high_risks,
-
-    medium_risks,
-
-    low_risks
-
-):
-
-    history = load_history()
-
-
-    # --------------------------------------------------------
-    # CREATE NEW CLOUD RECORD
-    # --------------------------------------------------------
-
-    new_scan = create_scan_record(
-
-        score,
-
-        status,
-
-        high_risks,
-
-        medium_risks,
-
-        low_risks
-
-    )
-
-
-    # --------------------------------------------------------
-    # ADD TO TOP
-    # --------------------------------------------------------
 
     history["cloud_scans"].insert(
         0,
         new_scan
     )
 
-
-    # --------------------------------------------------------
-    # KEEP LATEST 4
-    # --------------------------------------------------------
-
     history["cloud_scans"] = (
-
-        history["cloud_scans"]
-        [:MAX_HISTORY]
-
+        history["cloud_scans"][:MAX_HISTORY]
     )
 
+    for index, scan in enumerate(
+        history["cloud_scans"],
+        start=1
+    ):
 
-    # --------------------------------------------------------
-    # UPDATE NUMBERS
-    # --------------------------------------------------------
-
-    history["cloud_scans"] = (
-        update_scan_numbers(
-            history["cloud_scans"]
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # SAVE
-    # --------------------------------------------------------
+        scan["scan_number"] = index
 
     save_history(history)
 
 
-    # IMPORTANT:
-    # Return the updated cloud history
-    # so app.py can immediately display it.
-
-    return history["cloud_scans"]
-
-
 # ============================================================
-# SAVE DEVICE SECURITY SCAN
+# SAVE DEVICE SCAN
 # ============================================================
 
 def save_device_scan(
-
     score,
-
     status,
-
     high_risks,
-
     medium_risks,
-
     low_risks
-
 ):
+
+    now = datetime.now()
+
+    if _using_postgres():
+
+        _create_history_table()
+
+        connection = get_db_connection()
+
+        try:
+
+            connection.execute(
+                """
+                INSERT INTO scan_history
+                (
+                    scan_type,
+                    scan_date,
+                    scan_time,
+                    score,
+                    status,
+                    high_risks,
+                    medium_risks,
+                    low_risks
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "device",
+                    now.strftime("%d-%m-%Y"),
+                    now.strftime("%I:%M:%S %p"),
+                    int(score),
+                    str(status),
+                    int(high_risks),
+                    int(medium_risks),
+                    int(low_risks)
+                )
+            )
+
+            connection.commit()
+
+        finally:
+
+            connection.close()
+
+        return
 
     history = load_history()
 
+    new_scan = {
 
-    # --------------------------------------------------------
-    # CREATE NEW DEVICE RECORD
-    # --------------------------------------------------------
+        "scan_number": 0,
 
-    new_scan = create_scan_record(
+        "date": now.strftime(
+            "%d-%m-%Y"
+        ),
 
-        score,
+        "time": now.strftime(
+            "%I:%M:%S %p"
+        ),
 
-        status,
+        "score": score,
 
-        high_risks,
+        "status": status,
 
-        medium_risks,
+        "high": high_risks,
 
-        low_risks
+        "medium": medium_risks,
 
-    )
-
-
-    # --------------------------------------------------------
-    # ADD TO TOP
-    # --------------------------------------------------------
+        "low": low_risks
+    }
 
     history["device_scans"].insert(
-
         0,
-
         new_scan
-
     )
-
-
-    # --------------------------------------------------------
-    # KEEP LATEST 4
-    # --------------------------------------------------------
 
     history["device_scans"] = (
-
-        history["device_scans"]
-        [:MAX_HISTORY]
-
+        history["device_scans"][:MAX_HISTORY]
     )
 
+    for index, scan in enumerate(
+        history["device_scans"],
+        start=1
+    ):
 
-    # --------------------------------------------------------
-    # UPDATE NUMBERS
-    # --------------------------------------------------------
-
-    history["device_scans"] = (
-        update_scan_numbers(
-            history["device_scans"]
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # SAVE
-    # --------------------------------------------------------
+        scan["scan_number"] = index
 
     save_history(history)
 
 
-    # Return updated device history
+# ============================================================
+# SAVE SQLITE HISTORY
+# ============================================================
 
-    return history["device_scans"]
+def save_history(history):
+
+    with open(
+        "scan_history.json",
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            history,
+            file,
+            indent=4
+        )
 
 
 # ============================================================
-# GET CLOUD SCAN HISTORY
+# GET CLOUD HISTORY
 # ============================================================
 
 def get_history():
+
+    if _using_postgres():
+
+        _create_history_table()
+
+        connection = get_db_connection()
+
+        try:
+
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    scan_date,
+                    scan_time,
+                    score,
+                    status,
+                    high_risks,
+                    medium_risks,
+                    low_risks
+                FROM scan_history
+                WHERE scan_type = ?
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+                """,
+                (
+                    "cloud",
+                    MAX_HISTORY
+                )
+            ).fetchall()
+
+            history = []
+
+            for index, row in enumerate(
+                rows,
+                start=1
+            ):
+
+                history.append({
+
+                    "scan_number": index,
+
+                    "date": row["scan_date"],
+
+                    "time": row["scan_time"],
+
+                    "score": row["score"],
+
+                    "status": row["status"],
+
+                    "high": row["high_risks"],
+
+                    "medium": row["medium_risks"],
+
+                    "low": row["low_risks"]
+                })
+
+            return history
+
+        finally:
+
+            connection.close()
 
     history = load_history()
 
@@ -406,10 +420,72 @@ def get_history():
 
 
 # ============================================================
-# GET DEVICE SCAN HISTORY
+# GET DEVICE HISTORY
 # ============================================================
 
 def get_device_history():
+
+    if _using_postgres():
+
+        _create_history_table()
+
+        connection = get_db_connection()
+
+        try:
+
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    scan_date,
+                    scan_time,
+                    score,
+                    status,
+                    high_risks,
+                    medium_risks,
+                    low_risks
+                FROM scan_history
+                WHERE scan_type = ?
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+                """,
+                (
+                    "device",
+                    MAX_HISTORY
+                )
+            ).fetchall()
+
+            history = []
+
+            for index, row in enumerate(
+                rows,
+                start=1
+            ):
+
+                history.append({
+
+                    "scan_number": index,
+
+                    "date": row["scan_date"],
+
+                    "time": row["scan_time"],
+
+                    "score": row["score"],
+
+                    "status": row["status"],
+
+                    "high": row["high_risks"],
+
+                    "medium": row["medium_risks"],
+
+                    "low": row["low_risks"]
+                })
+
+            return history
+
+        finally:
+
+            connection.close()
 
     history = load_history()
 
