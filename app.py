@@ -206,120 +206,93 @@ def login():
 
     if request.method == "POST":
 
-        username = request.form.get(
-            "username",
-            ""
-        ).strip()
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
 
-        password = request.form.get(
-            "password",
-            ""
-        )
-
-        # --------------------------------------------
-        # Validate input
-        # --------------------------------------------
+        print("========== LOGIN DEBUG ==========")
+        print("Username received:", repr(username))
+        print("Password received:", "YES" if password else "NO")
 
         if not username or not password:
+            print("LOGIN FAILED: EMPTY INPUT")
 
             return render_template(
                 "login.html",
-                error="Please enter username and password."
+                error="DEBUG: Username or password was empty."
             )
-
 
         connection = None
 
         try:
 
-            # ----------------------------------------
-            # Connect to database
-            # ----------------------------------------
+            print("Connecting to database...")
 
             connection = get_db_connection()
+
+            print("Database connection successful.")
 
             user = connection.execute(
                 "SELECT * FROM users WHERE username = ?",
                 (username,)
             ).fetchone()
 
-
-            # ----------------------------------------
-            # User not found
-            # ----------------------------------------
+            print("User lookup result:", user)
 
             if user is None:
 
+                print("LOGIN FAILED: USER NOT FOUND")
+
                 return render_template(
                     "login.html",
-                    error="Username not found. Please register first."
+                    error="DEBUG: Username not found in database."
                 )
 
+            print("User found.")
 
-            # ----------------------------------------
-            # Verify password
-            # ----------------------------------------
-
-            if not check_password_hash(
+            password_matches = check_password_hash(
                 user["password"],
                 password
-            ):
+            )
+
+            print("Password matches:", password_matches)
+
+            if not password_matches:
+
+                print("LOGIN FAILED: WRONG PASSWORD")
 
                 return render_template(
                     "login.html",
-                    error="Wrong password."
+                    error="DEBUG: Password verification failed."
                 )
 
-
-            # ----------------------------------------
-            # LOGIN SUCCESS
-            # ----------------------------------------
+            print("LOGIN SUCCESS!")
 
             session.clear()
 
             session["logged_in"] = True
-
             session["user_id"] = user["id"]
-
             session["username"] = user["username"]
-
             session.permanent = True
 
-
-            print(
-                "LOGIN SUCCESS:",
-                username
-            )
-
-
-            # ----------------------------------------
-            # Go to dashboard
-            # ----------------------------------------
+            print("Session created.")
+            print("Redirecting to dashboard...")
 
             return redirect("/dashboard")
 
-
         except Exception as e:
 
-            print(
-                "LOGIN DATABASE ERROR:",
-                e
-            )
+            print("========== LOGIN EXCEPTION ==========")
+            print(repr(e))
 
             return render_template(
                 "login.html",
-                error="Unable to login. Please try again."
+                error=f"DEBUG DATABASE ERROR: {str(e)}"
             )
-
 
         finally:
 
             if connection:
-
                 connection.close()
-
-
-    # GET request
 
     return render_template(
         "login.html",
