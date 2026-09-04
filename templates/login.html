@@ -237,7 +237,12 @@
 
         {% endwith %}
 
-
+{% if error %}
+    <div class="login-message error">
+        <span class="message-icon">!</span>
+        <span>{{ error }}</span>
+    </div>
+{% endif %}
 
         <!-- =================================================
              LOGIN FORM
