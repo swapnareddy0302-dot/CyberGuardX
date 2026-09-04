@@ -4,11 +4,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import inspect
 
-
-# ============================================================
-# CYBERGUARDX BACKEND IMPORTS
-# ============================================================
-
 from backend.scanner.iam_scanner import IAMScanner
 from backend.scanner.ec2_scanner import EC2Scanner
 from backend.scanner.s3_scanner import S3Scanner
@@ -18,20 +13,14 @@ from backend.scanner.device_scanner import DeviceScanner
 from backend.risk_engine import RiskEngine
 from backend.system_info import get_system_info
 
-from backend.history_manager import (
-    save_scan,
-    get_history
-)
+from backend.history_manager import save_scan, get_history
 
 from backend.advisor import SecurityAdvisor
 from backend.compliance import ComplianceEngine
 from backend.alert_engine import AlertEngine
 from backend.report_generator import generate_pdf
 
-from database import (
-    create_user_table,
-    get_db_connection
-)
+from database import create_user_table, get_db_connection
 
 
 # ============================================================
@@ -39,11 +28,6 @@ from database import (
 # ============================================================
 
 app = Flask(__name__)
-
-
-# ============================================================
-# SECRET KEY
-# ============================================================
 
 app.secret_key = os.environ.get(
     "SECRET_KEY",
@@ -56,33 +40,25 @@ app.secret_key = os.environ.get(
 # ============================================================
 
 app.config["SESSION_COOKIE_NAME"] = "cyberguardx_session"
-
 app.config["SESSION_COOKIE_HTTPONLY"] = True
-
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-
-# HTTPS is used on Vercel
-app.config["SESSION_COOKIE_SECURE"] = bool(
-    os.environ.get("VERCEL")
-)
-
+app.config["SESSION_COOKIE_SECURE"] = bool(os.environ.get("VERCEL"))
 app.config["PERMANENT_SESSION_LIFETIME"] = 86400
 
 
 # ============================================================
-# CREATE DATABASE TABLE
+# DATABASE INITIALIZATION
 # ============================================================
 
 try:
     create_user_table()
     print("CyberGuardX database initialized successfully.")
-
 except Exception as e:
-    print("DATABASE INITIALIZATION ERROR:", e)
+    print("DATABASE INITIALIZATION ERROR:", repr(e))
 
 
 # ============================================================
-# GLOBAL SECURITY DATA
+# CLOUD SECURITY DATA
 # ============================================================
 
 security_score = 0
@@ -182,14 +158,11 @@ def security_status_from_score(score):
 
 
 # ============================================================
-# HOME PAGE
+# HOME
 # ============================================================
 
 @app.route("/")
 def home():
-
-    # First-time visitor
-    # goes to registration page
 
     if not session.get("logged_in"):
         return redirect("/register")
@@ -206,87 +179,73 @@ def login():
 
     if request.method == "POST":
 
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
+        username = request.form.get(
+            "username",
+            ""
+        ).strip()
 
-        print("========== LOGIN DEBUG ==========")
-        print("Username received:", repr(username))
-        print("Password received:", "YES" if password else "NO")
+        password = request.form.get(
+            "password",
+            ""
+        )
 
         if not username or not password:
-            print("LOGIN FAILED: EMPTY INPUT")
 
             return render_template(
                 "login.html",
-                error="DEBUG: Username or password was empty."
+                error="Please enter username and password."
             )
 
         connection = None
 
         try:
 
-            print("Connecting to database...")
-
             connection = get_db_connection()
-
-            print("Database connection successful.")
 
             user = connection.execute(
                 "SELECT * FROM users WHERE username = ?",
                 (username,)
             ).fetchone()
 
-            print("User lookup result:", user)
-
             if user is None:
 
-                print("LOGIN FAILED: USER NOT FOUND")
-
                 return render_template(
                     "login.html",
-                    error="DEBUG: Username not found in database."
+                    error="Username not found. Please register first."
                 )
 
-            print("User found.")
-
-            password_matches = check_password_hash(
+            if not check_password_hash(
                 user["password"],
                 password
-            )
-
-            print("Password matches:", password_matches)
-
-            if not password_matches:
-
-                print("LOGIN FAILED: WRONG PASSWORD")
+            ):
 
                 return render_template(
                     "login.html",
-                    error="DEBUG: Password verification failed."
+                    error="Wrong password."
                 )
-
-            print("LOGIN SUCCESS!")
 
             session.clear()
 
             session["logged_in"] = True
             session["user_id"] = user["id"]
             session["username"] = user["username"]
+
             session.permanent = True
 
-            print("Session created.")
-            print("Redirecting to dashboard...")
+            print("LOGIN SUCCESS:", username)
 
             return redirect("/dashboard")
 
         except Exception as e:
 
-            print("========== LOGIN EXCEPTION ==========")
-            print(repr(e))
+            print(
+                "LOGIN DATABASE ERROR:",
+                repr(e)
+            )
 
             return render_template(
                 "login.html",
-                error=f"DEBUG DATABASE ERROR: {str(e)}"
+                error="Unable to login. Please try again."
             )
 
         finally:
@@ -324,22 +283,12 @@ def register():
             ""
         )
 
-
-        # --------------------------------------------
-        # Validate fields
-        # --------------------------------------------
-
         if not username or not email or not password:
 
             return render_template(
                 "register.html",
                 error="Please fill in all fields."
             )
-
-
-        # --------------------------------------------
-        # Password validation
-        # --------------------------------------------
 
         if len(password) < 6:
 
@@ -348,21 +297,11 @@ def register():
                 error="Password must contain at least 6 characters."
             )
 
-
         connection = None
 
         try:
 
-            # ----------------------------------------
-            # Database connection
-            # ----------------------------------------
-
             connection = get_db_connection()
-
-
-            # ----------------------------------------
-            # Check existing username/email
-            # ----------------------------------------
 
             existing_user = connection.execute(
                 """
@@ -370,9 +309,11 @@ def register():
                 FROM users
                 WHERE username = ? OR email = ?
                 """,
-                (username, email)
+                (
+                    username,
+                    email
+                )
             ).fetchone()
-
 
             if existing_user is not None:
 
@@ -381,24 +322,18 @@ def register():
                     error="Username or email already exists. Please sign in."
                 )
 
-
-            # ----------------------------------------
-            # Hash password
-            # ----------------------------------------
-
             hashed_password = generate_password_hash(
                 password
             )
 
-
-            # ----------------------------------------
-            # Insert user
-            # ----------------------------------------
-
             connection.execute(
                 """
                 INSERT INTO users
-                (username, email, password)
+                (
+                    username,
+                    email,
+                    password
+                )
                 VALUES (?, ?, ?)
                 """,
                 (
@@ -408,30 +343,25 @@ def register():
                 )
             )
 
-
             connection.commit()
-
 
             print(
                 "REGISTRATION SUCCESS:",
                 username
             )
 
-
             flash(
                 "Registration successful! Please sign in.",
                 "success"
             )
 
-
             return redirect("/login")
-
 
         except Exception as e:
 
             print(
                 "REGISTRATION DATABASE ERROR:",
-                e
+                repr(e)
             )
 
             return render_template(
@@ -439,15 +369,10 @@ def register():
                 error="Unable to create account. Please try again."
             )
 
-
         finally:
 
             if connection:
-
                 connection.close()
-
-
-    # GET request
 
     return render_template(
         "register.html",
@@ -463,11 +388,9 @@ def register():
 def dashboard():
 
     if not session.get("logged_in"):
-
         return redirect("/login")
 
-
-    stats = {
+    dashboard_stats = {
 
         "iam_users": len(iam_result),
 
@@ -479,7 +402,6 @@ def dashboard():
 
     }
 
-
     return render_template(
 
         "dashboard.html",
@@ -488,7 +410,7 @@ def dashboard():
 
         status=security_status,
 
-        dashboard_stats=stats,
+        dashboard_stats=dashboard_stats,
 
         device_security_score=device_security_score,
 
@@ -500,7 +422,7 @@ def dashboard():
 
 
 # ============================================================
-# ROOT DASHBOARD COMPATIBILITY ROUTE
+# DASHBOARD SLASH
 # ============================================================
 
 @app.route("/dashboard/")
@@ -517,9 +439,7 @@ def dashboard_slash():
 def scan():
 
     if not session.get("logged_in"):
-
         return redirect("/login")
-
 
     global security_score
     global security_status
@@ -537,60 +457,54 @@ def scan():
 
     global scan_history
 
-
     try:
 
-        # --------------------------------------------
-        # System information
-        # --------------------------------------------
+        print("===================================")
+        print("STARTING CLOUD SECURITY SCAN")
+        print("===================================")
+
+        # ----------------------------------------------------
+        # SYSTEM INFORMATION
+        # ----------------------------------------------------
 
         system_info = get_system_info()
 
-
-        # --------------------------------------------
+        # ----------------------------------------------------
         # IAM
-        # --------------------------------------------
+        # ----------------------------------------------------
 
         iam_result = IAMScanner().scan()
 
-
-        # --------------------------------------------
+        # ----------------------------------------------------
         # EC2
-        # --------------------------------------------
+        # ----------------------------------------------------
 
         ec2_result = EC2Scanner().scan()
 
-
-        # --------------------------------------------
+        # ----------------------------------------------------
         # S3
-        # --------------------------------------------
+        # ----------------------------------------------------
 
         s3_result = S3Scanner().scan()
 
-
-        # --------------------------------------------
-        # Security Groups
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # SECURITY GROUP
+        # ----------------------------------------------------
 
         sg_result = SecurityGroupScanner().scan()
 
-
-        # --------------------------------------------
-        # Risk Engine
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # RISK ENGINE
+        # ----------------------------------------------------
 
         risk_result = RiskEngine().calculate_score(
 
             iam_result,
-
             ec2_result,
-
             s3_result,
-
             sg_result
 
         )
-
 
         security_score = int(
             risk_result.get(
@@ -599,12 +513,10 @@ def scan():
             )
         )
 
-
         risks = risk_result.get(
             "risks",
             []
         )
-
 
         security_status = risk_result.get(
             "status",
@@ -613,10 +525,9 @@ def scan():
             )
         )
 
-
-        # --------------------------------------------
-        # Compliance
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # COMPLIANCE
+        # ----------------------------------------------------
 
         compliance_report = (
             ComplianceEngine()
@@ -628,10 +539,9 @@ def scan():
             )
         )
 
-
-        # --------------------------------------------
-        # Alerts
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # ALERTS
+        # ----------------------------------------------------
 
         alerts = (
             AlertEngine()
@@ -643,10 +553,9 @@ def scan():
             )
         )
 
-
-        # --------------------------------------------
-        # Security Advisor
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # SECURITY ADVISOR
+        # ----------------------------------------------------
 
         advisor_result = (
             SecurityAdvisor()
@@ -658,19 +567,17 @@ def scan():
             )
         )
 
-
-        # --------------------------------------------
-        # Risk counts
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # RISK COUNTS
+        # ----------------------------------------------------
 
         high, medium, low = count_risks(
             risks
         )
 
-
-        # --------------------------------------------
-        # Save scan history
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # SAVE HISTORY
+        # ----------------------------------------------------
 
         save_scan(
 
@@ -686,13 +593,11 @@ def scan():
 
         )
 
-
         scan_history = get_history()
 
-
-        # --------------------------------------------
-        # Dashboard statistics
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # CLOUD STATISTICS
+        # ----------------------------------------------------
 
         dashboard_stats = {
 
@@ -706,10 +611,11 @@ def scan():
 
         }
 
+        print("CLOUD SCAN COMPLETED")
 
-        # --------------------------------------------
-        # Cloud report
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # CLOUD REPORT
+        # ----------------------------------------------------
 
         return render_template(
 
@@ -741,30 +647,15 @@ def scan():
 
             advisor_result=advisor_result,
 
-            scan_history=scan_history,
-
-            device_results=device_results,
-
-            device_security_score=device_security_score,
-
-            device_security_status=device_security_status,
-
-            device_high_risks=device_high_risks,
-
-            device_medium_risks=device_medium_risks,
-
-            device_low_risks=device_low_risks,
-
-            device_recommendations=device_recommendations
+            scan_history=scan_history
 
         )
-
 
     except Exception as e:
 
         print(
             "CLOUD SCAN ERROR:",
-            e
+            repr(e)
         )
 
         return render_template(
@@ -804,9 +695,7 @@ def scan():
 def device_scan():
 
     if not session.get("logged_in"):
-
         return redirect("/login")
-
 
     global device_results
 
@@ -819,22 +708,35 @@ def device_scan():
 
     global device_recommendations
 
-
     try:
 
-        # --------------------------------------------
-        # Device scanner
-        # --------------------------------------------
+        print("===================================")
+        print("STARTING DEVICE SECURITY SCAN")
+        print("===================================")
 
-        device_results = (
-            DeviceScanner()
-            .scan()
-        )
+        # ----------------------------------------------------
+        # RUN DEVICE SCANNER
+        # ----------------------------------------------------
 
+        device_results = DeviceScanner().scan()
 
-        # --------------------------------------------
-        # Risk counts
-        # --------------------------------------------
+        print("DEVICE RESULTS:")
+        print(device_results)
+
+        # ----------------------------------------------------
+        # ENSURE LIST
+        # ----------------------------------------------------
+
+        if not isinstance(
+            device_results,
+            list
+        ):
+
+            device_results = []
+
+        # ----------------------------------------------------
+        # DEVICE RISK COUNTS
+        # ----------------------------------------------------
 
         (
             device_high_risks,
@@ -844,10 +746,9 @@ def device_scan():
             device_results
         )
 
-
-        # --------------------------------------------
-        # Device security score
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # DEVICE SCORE
+        # ----------------------------------------------------
 
         device_security_score = max(
 
@@ -855,18 +756,21 @@ def device_scan():
 
             100
 
-            - device_high_risks * 15
+            - (
+                device_high_risks * 15
+            )
 
-            - device_medium_risks * 7
+            - (
+                device_medium_risks * 7
+            )
 
             - device_low_risks
 
         )
 
-
-        # --------------------------------------------
-        # Device security status
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # DEVICE STATUS
+        # ----------------------------------------------------
 
         device_security_status = (
             security_status_from_score(
@@ -874,36 +778,31 @@ def device_scan():
             )
         )
 
-
-        # --------------------------------------------
-        # Recommendations
-        # --------------------------------------------
+        # ----------------------------------------------------
+        # DEVICE RECOMMENDATIONS
+        # ----------------------------------------------------
 
         device_recommendations = []
 
-
-        if device_high_risks:
+        if device_high_risks > 0:
 
             device_recommendations.append(
                 "Review all high-risk device findings immediately."
             )
 
-
-        if device_medium_risks:
+        if device_medium_risks > 0:
 
             device_recommendations.append(
                 "Investigate medium-risk findings and reduce unnecessary exposure."
             )
 
-
-        if device_low_risks:
+        if device_low_risks > 0:
 
             device_recommendations.append(
                 "Review low-risk findings during routine maintenance."
             )
 
-
-        device_recommendations += [
+        device_recommendations.extend([
 
             "Keep the operating system and security software updated.",
 
@@ -911,92 +810,97 @@ def device_scan():
 
             "Use a firewall and avoid exposing unnecessary network services."
 
-        ]
+        ])
 
+        # ----------------------------------------------------
+        # DEVICE SYSTEM INFORMATION
+        # ----------------------------------------------------
 
-        # --------------------------------------------
-        # Report
-        # --------------------------------------------
+        current_system_info = get_system_info()
+
+        print(
+            "DEVICE SCORE:",
+            device_security_score
+        )
+
+        print(
+            "DEVICE STATUS:",
+            device_security_status
+        )
+
+        print(
+            "DEVICE SCAN COMPLETED"
+        )
+
+        # ----------------------------------------------------
+        # DEVICE REPORT
+        #
+        # THIS IS THE IMPORTANT FIX.
+        #
+        # Device scan uses:
+        #
+        # device_results.html
+        #
+        # NOT:
+        #
+        # scan_results.html
+        # ----------------------------------------------------
 
         return render_template(
 
-            "scan_results.html",
+            "device_results.html",
 
-            scan_type="device",
+            device_score=device_security_score,
 
-            score=device_security_score,
+            security_status=device_security_status,
 
-            status=device_security_status,
+            high_risks=device_high_risks,
 
-            dashboard_stats={
+            medium_risks=device_medium_risks,
 
-                "iam_users": len(iam_result),
-
-                "ec2_instances": len(ec2_result),
-
-                "s3_buckets": len(s3_result),
-
-                "security_groups": len(sg_result)
-
-            },
-
-            system_info=get_system_info(),
-
-            iam_result=iam_result,
-
-            ec2_result=ec2_result,
-
-            s3_result=s3_result,
-
-            sg_result=sg_result,
-
-            risks=risks,
-
-            alerts=alerts,
-
-            compliance_report=compliance_report,
-
-            advisor_result=advisor_result,
-
-            scan_history=scan_history,
+            low_risks=device_low_risks,
 
             device_results=device_results,
 
-            device_security_score=device_security_score,
+            recommendations=device_recommendations,
 
-            device_security_status=device_security_status,
-
-            device_high_risks=device_high_risks,
-
-            device_medium_risks=device_medium_risks,
-
-            device_low_risks=device_low_risks,
-
-            device_recommendations=device_recommendations
+            system_info=current_system_info
 
         )
-
 
     except Exception as e:
 
-        print(
-            "DEVICE SCAN ERROR:",
-            e
-        )
+        print("===================================")
+        print("DEVICE SCAN ERROR:")
+        print(repr(e))
+        print("===================================")
 
         return render_template(
+
             "dashboard.html",
+
             score=security_score,
+
             status=security_status,
+
             dashboard_stats={
+
                 "iam_users": len(iam_result),
+
                 "ec2_instances": len(ec2_result),
+
                 "s3_buckets": len(s3_result),
+
                 "security_groups": len(sg_result)
+
             },
+
             device_security_score=device_security_score,
+
             device_security_status=device_security_status,
+
             scan_history=scan_history
+
         )
 
 
@@ -1008,27 +912,22 @@ def device_scan():
 def download_report():
 
     if not session.get("logged_in"):
-
         return redirect("/login")
 
-
     try:
-
-        # --------------------------------------------
-        # Support both report generator versions
-        # --------------------------------------------
 
         signature = inspect.signature(
             generate_pdf
         )
 
-
         parameter_count = len(
             signature.parameters
         )
 
+        # ----------------------------------------------------
+        # NEW REPORT GENERATOR
+        # ----------------------------------------------------
 
-        # New version
         if parameter_count == 1:
 
             report_data = {
@@ -1053,13 +952,14 @@ def download_report():
 
             }
 
-
             return generate_pdf(
                 report_data
             )
 
+        # ----------------------------------------------------
+        # OLD REPORT GENERATOR
+        # ----------------------------------------------------
 
-        # Old version
         return generate_pdf(
 
             security_score,
@@ -1080,12 +980,11 @@ def download_report():
 
         )
 
-
     except Exception as e:
 
         print(
             "REPORT GENERATION ERROR:",
-            e
+            repr(e)
         )
 
         return redirect("/dashboard")
@@ -1117,13 +1016,11 @@ def internal_server_error(error):
 
     print(
         "INTERNAL SERVER ERROR:",
-        error
+        repr(error)
     )
 
     return """
-
     <html>
-
     <head>
 
         <title>CyberGuardX - Server Error</title>
@@ -1131,26 +1028,30 @@ def internal_server_error(error):
         <style>
 
             body {
-                background:#020617;
-                color:white;
-                font-family:Arial;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                min-height:100vh;
-                text-align:center;
+                background: #020617;
+                color: white;
+                font-family: Arial, sans-serif;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                text-align: center;
             }
 
             .box {
-                max-width:600px;
-                padding:40px;
-                border:1px solid #334155;
-                border-radius:20px;
-                background:#0f172a;
+                max-width: 600px;
+                padding: 40px;
+                border: 1px solid #334155;
+                border-radius: 20px;
+                background: #0f172a;
             }
 
             h1 {
-                color:#60a5fa;
+                color: #60a5fa;
+            }
+
+            a {
+                color: #60a5fa;
             }
 
         </style>
@@ -1169,19 +1070,14 @@ def internal_server_error(error):
                 The server encountered an unexpected error.
             </p>
 
-            <a
-                href="/dashboard"
-                style="color:#60a5fa;"
-            >
+            <a href="/dashboard">
                 Return to Dashboard
             </a>
 
         </div>
 
     </body>
-
     </html>
-
     """, 500
 
 
@@ -1191,14 +1087,12 @@ def internal_server_error(error):
 
 if __name__ == "__main__":
 
-    print(
-        """
+    print("""
 ===================================
 CyberGuardX is starting...
 Open: http://127.0.0.1:5000
 ===================================
-"""
-    )
+""")
 
     app.run(
 
