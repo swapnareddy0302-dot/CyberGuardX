@@ -1,3 +1,9 @@
+# ============================================================
+# CyberGuardX
+# Scan History Manager
+# Cloud + Device Scan History
+# ============================================================
+
 import json
 import os
 from datetime import datetime
@@ -8,39 +14,41 @@ HISTORY_FILE = "scan_history.json"
 MAX_HISTORY = 4
 
 
-# ==========================================
+# ============================================================
+# CREATE EMPTY HISTORY
+# ============================================================
+
+def empty_history():
+
+    return {
+        "cloud_scans": [],
+        "device_scans": []
+    }
+
+
+# ============================================================
 # LOAD COMPLETE HISTORY
-# ==========================================
+# ============================================================
 
 def load_history():
 
-    # Create empty history structure if file
-    # does not exist
-
     if not os.path.exists(HISTORY_FILE):
-
-        return {
-
-            "cloud_scans": [],
-
-            "device_scans": []
-
-        }
-
+        return empty_history()
 
     try:
 
-        with open(HISTORY_FILE, "r") as file:
+        with open(
+            HISTORY_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
 
             history = json.load(file)
 
 
-        # ==================================
-        # SUPPORT OLD HISTORY FORMAT
-        # ==================================
-
-        # Your old JSON file contains a list.
-        # Convert it automatically.
+        # ----------------------------------------------------
+        # SUPPORT OLD LIST FORMAT
+        # ----------------------------------------------------
 
         if isinstance(history, list):
 
@@ -53,9 +61,14 @@ def load_history():
             }
 
 
-        # ==================================
-        # MAKE SURE KEYS EXIST
-        # ==================================
+        # ----------------------------------------------------
+        # VALIDATE HISTORY
+        # ----------------------------------------------------
+
+        if not isinstance(history, dict):
+
+            return empty_history()
+
 
         if "cloud_scans" not in history:
 
@@ -67,9 +80,29 @@ def load_history():
             history["device_scans"] = []
 
 
-        # ==================================
-        # KEEP ONLY LATEST 4
-        # ==================================
+        # ----------------------------------------------------
+        # MAKE SURE VALUES ARE LISTS
+        # ----------------------------------------------------
+
+        if not isinstance(
+            history["cloud_scans"],
+            list
+        ):
+
+            history["cloud_scans"] = []
+
+
+        if not isinstance(
+            history["device_scans"],
+            list
+        ):
+
+            history["device_scans"] = []
+
+
+        # ----------------------------------------------------
+        # KEEP ONLY LATEST SCANS
+        # ----------------------------------------------------
 
         history["cloud_scans"] = (
             history["cloud_scans"][:MAX_HISTORY]
@@ -83,20 +116,109 @@ def load_history():
         return history
 
 
-    except Exception:
+    except (
+        json.JSONDecodeError,
+        OSError,
+        TypeError,
+        ValueError
+    ):
 
-        return {
-
-            "cloud_scans": [],
-
-            "device_scans": []
-
-        }
+        return empty_history()
 
 
-# ==========================================
+# ============================================================
+# SAVE COMPLETE HISTORY
+# ============================================================
+
+def save_history(history):
+
+    try:
+
+        with open(
+            HISTORY_FILE,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            json.dump(
+                history,
+                file,
+                indent=4
+            )
+
+        return True
+
+    except OSError:
+
+        return False
+
+
+# ============================================================
+# CREATE SCAN RECORD
+# ============================================================
+
+def create_scan_record(
+
+    score,
+
+    status,
+
+    high_risks,
+
+    medium_risks,
+
+    low_risks
+
+):
+
+    now = datetime.now()
+
+    return {
+
+        "scan_number": 0,
+
+        "date": now.strftime(
+            "%d-%m-%Y"
+        ),
+
+        "time": now.strftime(
+            "%I:%M:%S %p"
+        ),
+
+        "score": int(score),
+
+        "status": str(status),
+
+        "high": int(high_risks),
+
+        "medium": int(medium_risks),
+
+        "low": int(low_risks)
+
+    }
+
+
+# ============================================================
+# UPDATE SCAN NUMBERS
+# ============================================================
+
+def update_scan_numbers(scans):
+
+    for index, scan in enumerate(
+        scans,
+        start=1
+    ):
+
+        if isinstance(scan, dict):
+
+            scan["scan_number"] = index
+
+    return scans
+
+
+# ============================================================
 # SAVE CLOUD SECURITY SCAN
-# ==========================================
+# ============================================================
 
 def save_scan(
 
@@ -115,82 +237,75 @@ def save_scan(
     history = load_history()
 
 
-    # ======================================
-    # CREATE NEW CLOUD SCAN
-    # ======================================
+    # --------------------------------------------------------
+    # CREATE NEW CLOUD RECORD
+    # --------------------------------------------------------
 
-    new_scan = {
+    new_scan = create_scan_record(
 
-        "scan_number": 0,
+        score,
 
-        "date": datetime.now().strftime(
-            "%d-%m-%Y"
-        ),
+        status,
 
-        "time": datetime.now().strftime(
-            "%I:%M:%S %p"
-        ),
+        high_risks,
 
-        "score": score,
+        medium_risks,
 
-        "status": status,
+        low_risks
 
-        "high": high_risks,
-
-        "medium": medium_risks,
-
-        "low": low_risks
-
-    }
+    )
 
 
-    # ======================================
+    # --------------------------------------------------------
     # ADD TO TOP
-    # ======================================
+    # --------------------------------------------------------
 
     history["cloud_scans"].insert(
-
         0,
-
         new_scan
-
     )
 
 
-    # ======================================
-    # KEEP ONLY LATEST 4
-    # ======================================
+    # --------------------------------------------------------
+    # KEEP LATEST 4
+    # --------------------------------------------------------
 
     history["cloud_scans"] = (
-        history["cloud_scans"][:MAX_HISTORY]
+
+        history["cloud_scans"]
+        [:MAX_HISTORY]
+
     )
 
 
-    # ======================================
-    # UPDATE SCAN NUMBERS
-    # ======================================
+    # --------------------------------------------------------
+    # UPDATE NUMBERS
+    # --------------------------------------------------------
 
-    for index, scan in enumerate(
-
-        history["cloud_scans"],
-
-        start=1
-
-    ):
-
-        scan["scan_number"] = index
+    history["cloud_scans"] = (
+        update_scan_numbers(
+            history["cloud_scans"]
+        )
+    )
 
 
-    # ======================================
-    # SAVE FILE
-    # ======================================
+    # --------------------------------------------------------
+    # SAVE
+    # --------------------------------------------------------
 
     save_history(history)
 
 
-# ==========================================
+    # IMPORTANT:
+    # Return the updated cloud history
+    # so app.py can immediately display it.
+
+    return history["cloud_scans"]
+
+
+# ============================================================
 # SAVE DEVICE SECURITY SCAN
-# ==========================================
+# ============================================================
 
 def save_device_scan(
 
@@ -209,38 +324,28 @@ def save_device_scan(
     history = load_history()
 
 
-    # ======================================
-    # CREATE NEW DEVICE SCAN
-    # ======================================
+    # --------------------------------------------------------
+    # CREATE NEW DEVICE RECORD
+    # --------------------------------------------------------
 
-    new_scan = {
+    new_scan = create_scan_record(
 
-        "scan_number": 0,
+        score,
 
-        "date": datetime.now().strftime(
-            "%d-%m-%Y"
-        ),
+        status,
 
-        "time": datetime.now().strftime(
-            "%I:%M:%S %p"
-        ),
+        high_risks,
 
-        "score": score,
+        medium_risks,
 
-        "status": status,
+        low_risks
 
-        "high": high_risks,
-
-        "medium": medium_risks,
-
-        "low": low_risks
-
-    }
+    )
 
 
-    # ======================================
-    # ADD NEW SCAN TO TOP
-    # ======================================
+    # --------------------------------------------------------
+    # ADD TO TOP
+    # --------------------------------------------------------
 
     history["device_scans"].insert(
 
@@ -251,93 +356,64 @@ def save_device_scan(
     )
 
 
-    # ======================================
-    # KEEP ONLY LATEST 4
-    # ======================================
+    # --------------------------------------------------------
+    # KEEP LATEST 4
+    # --------------------------------------------------------
 
     history["device_scans"] = (
-        history["device_scans"][:MAX_HISTORY]
+
+        history["device_scans"]
+        [:MAX_HISTORY]
+
     )
 
 
-    # ======================================
-    # UPDATE SCAN NUMBERS
-    # ======================================
+    # --------------------------------------------------------
+    # UPDATE NUMBERS
+    # --------------------------------------------------------
 
-    for index, scan in enumerate(
-
-        history["device_scans"],
-
-        start=1
-
-    ):
-
-        scan["scan_number"] = index
+    history["device_scans"] = (
+        update_scan_numbers(
+            history["device_scans"]
+        )
+    )
 
 
-    # ======================================
-    # SAVE COMPLETE HISTORY
-    # ======================================
+    # --------------------------------------------------------
+    # SAVE
+    # --------------------------------------------------------
 
     save_history(history)
 
 
-# ==========================================
-# SAVE HISTORY FILE
-# ==========================================
+    # Return updated device history
 
-def save_history(history):
-
-    with open(
-
-        HISTORY_FILE,
-
-        "w"
-
-    ) as file:
-
-        json.dump(
-
-            history,
-
-            file,
-
-            indent=4
-
-        )
+    return history["device_scans"]
 
 
-# ==========================================
+# ============================================================
 # GET CLOUD SCAN HISTORY
-# ==========================================
+# ============================================================
 
 def get_history():
 
     history = load_history()
 
-
     return history.get(
-
         "cloud_scans",
-
         []
-
     )[:MAX_HISTORY]
 
 
-# ==========================================
+# ============================================================
 # GET DEVICE SCAN HISTORY
-# ==========================================
+# ============================================================
 
 def get_device_history():
 
     history = load_history()
 
-
     return history.get(
-
         "device_scans",
-
         []
-
     )[:MAX_HISTORY]

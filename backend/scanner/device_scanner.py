@@ -1,106 +1,236 @@
-
 import platform
 import socket
 import os
 import shutil
+import sys
+import uuid
+
 from datetime import datetime
 
 
 class DeviceScanner:
 
+    """
+    Read-only local device information collector
+    for CyberGuardX.
+    """
+
+
+    # ========================================================
+    # LOCAL IP
+    # ========================================================
+
+    def _local_ip(self):
+
+        try:
+
+            sock = socket.socket(
+                socket.AF_INET,
+                socket.SOCK_DGRAM
+            )
+
+            sock.settimeout(0.5)
+
+            sock.connect(
+                (
+                    "8.8.8.8",
+                    80
+                )
+            )
+
+            ip = sock.getsockname()[0]
+
+            sock.close()
+
+            return ip
+
+        except Exception:
+
+            try:
+
+                return socket.gethostbyname(
+                    socket.gethostname()
+                )
+
+            except Exception:
+
+                return "Unavailable"
+
+
+    # ========================================================
+    # MAC ADDRESS
+    # ========================================================
+
+    def _mac(self):
+
+        try:
+
+            node = uuid.getnode()
+
+            return ":".join(
+                f"{(node >> shift) & 255:02x}"
+                for shift in range(
+                    40,
+                    -1,
+                    -8
+                )
+            )
+
+        except Exception:
+
+            return "Unavailable"
+
+
+    # ========================================================
+    # SCAN
+    # ========================================================
+
     def scan(self):
 
         results = []
 
-        # =====================================
-        # OPERATING SYSTEM CHECK
-        # =====================================
 
-        os_name = platform.system()
-        os_version = platform.version()
+        # ----------------------------------------------------
+        # OPERATING SYSTEM
+        # ----------------------------------------------------
+
+        operating_system = platform.system()
+
+        release = platform.release()
+
+        version = platform.version()
+
 
         results.append({
 
-            "category": "Operating System",
+            "category":
+                "Operating System",
 
-            "finding": os_name,
+            "finding":
+                operating_system,
 
-            "details": f"Operating system version detected: {os_version}",
+            "details":
+                f"Release: {release} | Version: {version}",
 
-            "risk": "Low"
+            "risk":
+                "Low"
 
         })
 
 
-        # =====================================
-        # HOSTNAME CHECK
-        # =====================================
+        # ----------------------------------------------------
+        # HOSTNAME
+        # ----------------------------------------------------
 
         hostname = socket.gethostname()
 
+
         results.append({
 
-            "category": "System Identity",
+            "category":
+                "System Identity",
 
-            "finding": hostname,
+            "finding":
+                hostname,
 
-            "details": "Device hostname detected successfully.",
+            "details":
+                "Device hostname detected successfully.",
 
-            "risk": "Low"
+            "risk":
+                "Low"
 
         })
 
 
-        # =====================================
-        # IP ADDRESS CHECK
-        # =====================================
+        # ----------------------------------------------------
+        # IP ADDRESS
+        # ----------------------------------------------------
+
+        ip_address = self._local_ip()
+
+
+        if ip_address in (
+            "Unavailable",
+            "127.0.0.1"
+        ):
+
+            ip_risk = "Medium"
+
+        else:
+
+            ip_risk = "Low"
+
+
+        results.append({
+
+            "category":
+                "Network",
+
+            "finding":
+                "Local IP Address",
+
+            "details":
+                f"Detected IP address: {ip_address}",
+
+            "risk":
+                ip_risk
+
+        })
+
+
+        # ----------------------------------------------------
+        # MAC ADDRESS
+        # ----------------------------------------------------
+
+        results.append({
+
+            "category":
+                "Network",
+
+            "finding":
+                "MAC Address",
+
+            "details":
+                self._mac(),
+
+            "risk":
+                "Low"
+
+        })
+
+
+        # ----------------------------------------------------
+        # STORAGE
+        # ----------------------------------------------------
 
         try:
 
-            ip_address = socket.gethostbyname(hostname)
+            if os.name == "nt":
 
-            risk = "Low"
+                disk_path = (
+                    os.environ.get(
+                        "SystemDrive",
+                        "C:"
+                    )
+                    + "\\"
+                )
 
-            if ip_address.startswith("127."):
+            else:
 
-                risk = "Medium"
-
-            results.append({
-
-                "category": "Network",
-
-                "finding": "Local IP Address",
-
-                "details": f"Detected IP address: {ip_address}",
-
-                "risk": risk
-
-            })
-
-        except Exception:
-
-            results.append({
-
-                "category": "Network",
-
-                "finding": "IP Detection",
-
-                "details": "Unable to determine local IP address.",
-
-                "risk": "Medium"
-
-            })
+                disk_path = "/"
 
 
-        # =====================================
-        # DISK SPACE CHECK
-        # =====================================
+            total, used, free = (
+                shutil.disk_usage(
+                    disk_path
+                )
+            )
 
-        try:
 
-            total, used, free = shutil.disk_usage("/")
+            usage_percentage = (
+                used / total
+            ) * 100
 
-            usage_percentage = (used / total) * 100
 
             if usage_percentage > 90:
 
@@ -114,36 +244,49 @@ class DeviceScanner:
 
                 risk = "Low"
 
-            results.append({
-
-                "category": "Storage",
-
-                "finding": "Disk Usage",
-
-                "details": f"Disk usage is {usage_percentage:.1f}%",
-
-                "risk": risk
-
-            })
-
-        except Exception:
 
             results.append({
 
-                "category": "Storage",
+                "category":
+                    "Storage",
 
-                "finding": "Disk Scan",
+                "finding":
+                    "Disk Usage",
 
-                "details": "Unable to analyse disk usage.",
+                "details":
+                    (
+                        f"{usage_percentage:.1f}% used | "
+                        f"{free / (1024 ** 3):.1f} GB free "
+                        f"of {total / (1024 ** 3):.1f} GB"
+                    ),
 
-                "risk": "Medium"
+                "risk":
+                    risk
+
+            })
+
+        except Exception as error:
+
+            results.append({
+
+                "category":
+                    "Storage",
+
+                "finding":
+                    "Disk Scan",
+
+                "details":
+                    str(error),
+
+                "risk":
+                    "Medium"
 
             })
 
 
-        # =====================================
-        # USER ACCOUNT CHECK
-        # =====================================
+        # ----------------------------------------------------
+        # USER
+        # ----------------------------------------------------
 
         try:
 
@@ -151,82 +294,162 @@ class DeviceScanner:
 
         except Exception:
 
-            username = os.environ.get("USERNAME", "Unknown User")
+            username = (
+                os.environ.get("USERNAME")
+                or os.environ.get("USER")
+                or "Unknown User"
+            )
 
 
         results.append({
 
-            "category": "User Security",
+            "category":
+                "User Security",
 
-            "finding": username,
+            "finding":
+                username,
 
-            "details": "Current active device user detected.",
+            "details":
+                "Current active device user detected.",
 
-            "risk": "Low"
+            "risk":
+                "Low"
 
         })
 
 
-        # =====================================
-        # PLATFORM ARCHITECTURE
-        # =====================================
-
-        architecture = platform.machine()
-
+        # ----------------------------------------------------
+        # ARCHITECTURE
+        # ----------------------------------------------------
 
         results.append({
 
-            "category": "System Architecture",
+            "category":
+                "System Architecture",
 
-            "finding": architecture,
+            "finding":
+                platform.machine()
+                or "Unknown",
 
-            "details": "System processor architecture detected.",
+            "details":
+                "Processor architecture detected.",
 
-            "risk": "Low"
+            "risk":
+                "Low"
 
         })
 
 
-        # =====================================
-        # SYSTEM RELEASE
-        # =====================================
-
-        release = platform.release()
-
+        # ----------------------------------------------------
+        # PROCESSOR
+        # ----------------------------------------------------
 
         results.append({
 
-            "category": "Operating System",
+            "category":
+                "Hardware",
 
-            "finding": "System Release",
+            "finding":
+                "Processor",
 
-            "details": f"Release version: {release}",
+            "details":
+                platform.processor()
+                or "Unavailable",
 
-            "risk": "Low"
+            "risk":
+                "Low"
 
         })
 
 
-        # =====================================
+        # ----------------------------------------------------
+        # CPU CORES
+        # ----------------------------------------------------
+
+        results.append({
+
+            "category":
+                "Hardware",
+
+            "finding":
+                "CPU Cores",
+
+            "details":
+                (
+                    f"{os.cpu_count() or 'Unknown'} "
+                    "logical CPU cores detected."
+                ),
+
+            "risk":
+                "Low"
+
+        })
+
+
+        # ----------------------------------------------------
+        # PYTHON VERSION
+        # ----------------------------------------------------
+
+        results.append({
+
+            "category":
+                "Runtime",
+
+            "finding":
+                "Python Version",
+
+            "details":
+                sys.version.split()[0],
+
+            "risk":
+                "Low"
+
+        })
+
+
+        # ----------------------------------------------------
+        # HOSTNAME RESOLUTION
+        # ----------------------------------------------------
+
+        results.append({
+
+            "category":
+                "Network Stack",
+
+            "finding":
+                "Hostname Resolution",
+
+            "details":
+                "Local hostname and IP resolution completed.",
+
+            "risk":
+                "Low"
+
+        })
+
+
+        # ----------------------------------------------------
         # SCAN TIME
-        # =====================================
+        # ----------------------------------------------------
 
         scan_time = datetime.now().strftime(
-
             "%d-%m-%Y %I:%M:%S %p"
-
         )
 
 
         results.append({
 
-            "category": "Scan Information",
+            "category":
+                "Scan Information",
 
-            "finding": "Device Scan Completed",
+            "finding":
+                "Device Scan Completed",
 
-            "details": f"Security analysis completed at {scan_time}",
+            "details":
+                scan_time,
 
-            "risk": "Low"
+            "risk":
+                "Low"
 
         })
 

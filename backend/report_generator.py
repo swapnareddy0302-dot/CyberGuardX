@@ -1,3 +1,16 @@
+from io import BytesIO
+from datetime import datetime
+
+from flask import send_file
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import (
+    getSampleStyleSheet,
+    ParagraphStyle
+)
+from reportlab.lib.units import mm
 
 from reportlab.platypus import (
     SimpleDocTemplate,
@@ -5,408 +18,505 @@ from reportlab.platypus import (
     Spacer,
     Table,
     TableStyle,
-    PageBreak,
-    KeepTogether
-)
-
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER
-from reportlab.lib.colors import HexColor
-from reportlab.lib import colors
-from reportlab.lib.units import inch
-
-from flask import send_file
-
-import io
-from datetime import datetime
-
-
-# ============================================================
-# STYLES
-# ============================================================
-
-styles = getSampleStyleSheet()
-
-title_style = ParagraphStyle(
-    "CustomTitle",
-    parent=styles["Heading1"],
-    alignment=TA_CENTER,
-    textColor=HexColor("#0B5394"),
-    fontSize=22,
-    leading=26,
-    spaceBefore=4,
-    spaceAfter=8
-)
-
-heading_style = ParagraphStyle(
-    "CustomHeading",
-    parent=styles["Heading2"],
-    textColor=HexColor("#0B5394"),
-    fontSize=15,
-    leading=18,
-    spaceBefore=6,
-    spaceAfter=7
-)
-
-normal_style = ParagraphStyle(
-    "CustomNormal",
-    parent=styles["BodyText"],
-    fontSize=9,
-    leading=13,
-    spaceAfter=5
-)
-
-small_style = ParagraphStyle(
-    "Small",
-    parent=styles["BodyText"],
-    fontSize=8,
-    leading=10
-)
-
-table_cell_style = ParagraphStyle(
-    "TableCell",
-    parent=styles["BodyText"],
-    fontSize=8,
-    leading=10,
-    alignment=TA_CENTER
-)
-
-table_header_style = ParagraphStyle(
-    "TableHeader",
-    parent=styles["BodyText"],
-    fontSize=8,
-    leading=10,
-    alignment=TA_CENTER,
-    textColor=colors.white
+    PageBreak
 )
 
 
 # ============================================================
-# COMMON TABLE FUNCTION
+# HELPERS
 # ============================================================
 
-def create_table(data, column_widths=None):
+def get_value(
+    item,
+    *keys,
+    default=""
+):
 
-    formatted_data = []
+    if isinstance(item, dict):
 
-    for row_index, row in enumerate(data):
+        for key in keys:
 
-        formatted_row = []
-
-        for cell in row:
-
-            text = str(cell)
-
-            if row_index == 0:
-                formatted_row.append(
-                    Paragraph(
-                        f"<b>{text}</b>",
-                        table_header_style
-                    )
+            if (
+                key in item
+                and item[key] not in (
+                    None,
+                    ""
                 )
-            else:
-                formatted_row.append(
-                    Paragraph(
-                        text,
-                        table_cell_style
-                    )
+            ):
+
+                return str(
+                    item[key]
                 )
 
-        formatted_data.append(formatted_row)
+    return default
 
-    table = Table(
-        formatted_data,
-        colWidths=column_widths,
-        repeatRows=1,
-        hAlign="CENTER"
+
+def get_risk(item):
+
+    return get_value(
+        item,
+        "level",
+        "risk",
+        "severity",
+        default="Low"
+    ).title()
+
+
+def safe_text(value):
+
+    if value is None:
+        return ""
+
+    return str(value)
+
+
+def make_paragraph(
+    text,
+    style
+):
+
+    text = safe_text(
+        text
     )
 
-    table.setStyle(
-        TableStyle(
-            [
-                # Header
-                ("BACKGROUND", (0, 0), (-1, 0), HexColor("#0B5394")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-
-                # Alignment
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-
-                # Grid
-                ("GRID", (0, 0), (-1, -1), 0.6, colors.grey),
-
-                # Body
-                ("BACKGROUND", (0, 1), (-1, -1), HexColor("#F8FBFF")),
-
-                # Padding
-                ("TOPPADDING", (0, 0), (-1, 0), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
-
-                ("TOPPADDING", (0, 1), (-1, -1), 5),
-                ("BOTTOMPADDING", (0, 1), (-1, -1), 5),
-            ]
+    text = (
+        text
+        .replace(
+            "&",
+            "&amp;"
+        )
+        .replace(
+            "<",
+            "&lt;"
+        )
+        .replace(
+            ">",
+            "&gt;"
         )
     )
 
-    return table
+    return Paragraph(
+        text,
+        style
+    )
 
 
 # ============================================================
 # PDF GENERATOR
 # ============================================================
 
-def generate_pdf(
-    security_score,
-    system_info,
-    iam_result,
-    ec2_result,
-    s3_result,
-    sg_result,
-    advisor_result,
-    scan_history
-):
+def generate_pdf(report_data):
 
-    buffer = io.BytesIO()
+    """
+    Generate CyberGuardX PDF.
 
-    doc = SimpleDocTemplate(
+    IMPORTANT:
+    This function accepts ONE argument:
+    report_data dictionary.
+    """
+
+    if not isinstance(
+        report_data,
+        dict
+    ):
+
+        report_data = {}
+
+
+    buffer = BytesIO()
+
+
+    document = SimpleDocTemplate(
+
         buffer,
-        rightMargin=35,
-        leftMargin=35,
-        topMargin=35,
-        bottomMargin=35,
-        title="CyberGuardX Cloud Security Assessment Report"
+
+        pagesize=A4,
+
+        rightMargin=
+            16 * mm,
+
+        leftMargin=
+            16 * mm,
+
+        topMargin=
+            16 * mm,
+
+        bottomMargin=
+            16 * mm,
+
+        title=
+            "CyberGuardX Security Assessment Report",
+
+        author=
+            "CyberGuardX"
     )
+
+
+    styles = (
+        getSampleStyleSheet()
+    )
+
+
+    # ========================================================
+    # STYLES
+    # ========================================================
+
+    title_style = ParagraphStyle(
+
+        "CyberTitle",
+
+        parent=
+            styles["Title"],
+
+        fontName=
+            "Helvetica-Bold",
+
+        fontSize=
+            22,
+
+        leading=
+            27,
+
+        alignment=
+            TA_CENTER,
+
+        textColor=
+            colors.HexColor(
+                "#123B75"
+            ),
+
+        spaceAfter=
+            8
+    )
+
+
+    subtitle_style = ParagraphStyle(
+
+        "CyberSubtitle",
+
+        parent=
+            styles["Normal"],
+
+        fontName=
+            "Helvetica",
+
+        fontSize=
+            9,
+
+        leading=
+            13,
+
+        alignment=
+            TA_CENTER,
+
+        textColor=
+            colors.HexColor(
+                "#5B6B82"
+            ),
+
+        spaceAfter=
+            14
+    )
+
+
+    section_style = ParagraphStyle(
+
+        "CyberSection",
+
+        parent=
+            styles["Heading2"],
+
+        fontName=
+            "Helvetica-Bold",
+
+        fontSize=
+            14,
+
+        leading=
+            18,
+
+        textColor=
+            colors.HexColor(
+                "#123B75"
+            ),
+
+        spaceBefore=
+            10,
+
+        spaceAfter=
+            8
+    )
+
+
+    normal_style = ParagraphStyle(
+
+        "CyberNormal",
+
+        parent=
+            styles["Normal"],
+
+        fontName=
+            "Helvetica",
+
+        fontSize=
+            8.5,
+
+        leading=
+            12,
+
+        textColor=
+            colors.HexColor(
+                "#27364A"
+            ),
+
+        spaceAfter=
+            5
+    )
+
+
+    small_style = ParagraphStyle(
+
+        "CyberSmall",
+
+        parent=
+            normal_style,
+
+        fontSize=
+            7.2,
+
+        leading=
+            9.5
+    )
+
 
     story = []
 
 
     # ========================================================
-    # RISK STATUS
+    # BASIC DATA
     # ========================================================
 
-    if security_score >= 80:
-        status = "LOW RISK"
-
-    elif security_score >= 60:
-        status = "MEDIUM RISK"
-
-    else:
-        status = "HIGH RISK"
-
-
-    # ========================================================
-    # COVER PAGE
-    # ========================================================
-
-    story.append(
-        Spacer(1, 0.2 * inch)
+    score = int(
+        report_data.get(
+            "score",
+            0
+        )
+        or 0
     )
 
+
+    status = report_data.get(
+        "status",
+        "Not Scanned"
+    )
+
+
+    username = report_data.get(
+        "username",
+        "User"
+    )
+
+
+    report_type = report_data.get(
+        "report_type",
+        "Security Assessment"
+    )
+
+
+    # ========================================================
+    # TITLE
+    # ========================================================
+
     story.append(
+
         Paragraph(
             "CyberGuardX",
             title_style
         )
     )
 
+
     story.append(
+
         Paragraph(
-            "Cloud Security Assessment Report",
-            heading_style
+            report_type,
+            subtitle_style
         )
     )
 
-    story.append(
-        Spacer(1, 0.15 * inch)
-    )
 
     story.append(
+
         Paragraph(
-            "<b>Generated By:</b> CyberGuardX v2.0",
-            normal_style
+            "Cloud & Device Security Intelligence",
+            subtitle_style
         )
-    )
-
-    story.append(
-        Paragraph(
-            "<b>Report ID:</b> CGX-20260803-001",
-            normal_style
-        )
-    )
-
-    story.append(
-        Paragraph(
-            f"<b>Date:</b> "
-            f"{datetime.now().strftime('%d %B %Y %I:%M %p')}",
-            normal_style
-        )
-    )
-
-    story.append(
-        Spacer(1, 0.2 * inch)
     )
 
 
     # ========================================================
-    # SECURITY SCORE BOX
+    # SUMMARY
     # ========================================================
 
-    score_header = Paragraph(
-        "<b>OVERALL SECURITY SCORE</b>",
-        ParagraphStyle(
-            "ScoreHeader",
-            parent=normal_style,
-            alignment=TA_CENTER,
-            textColor=colors.white,
-            fontSize=11,
-            leading=13
-        )
-    )
+    summary_data = [
 
-    score_number = Paragraph(
-        f"<b>{security_score}%</b>",
-        ParagraphStyle(
-            "ScoreNumber",
-            parent=normal_style,
-            alignment=TA_CENTER,
-            fontSize=20,
-            leading=24,
-            textColor=HexColor("#0B5394")
-        )
-    )
-
-    score_table = Table(
         [
-            [score_header],
-            [score_number]
-        ],
-        colWidths=[360],
-        rowHeights=[28, 52],
-        hAlign="CENTER"
-    )
+            make_paragraph(
+                "REPORT TYPE",
+                small_style
+            ),
 
-    score_table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), HexColor("#0B5394")),
-                ("BACKGROUND", (0, 1), (-1, 1), HexColor("#EAF2FF")),
+            make_paragraph(
+                "SECURITY SCORE",
+                small_style
+            ),
 
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-
-                ("BOX", (0, 0), (-1, -1), 1, HexColor("#0B5394")),
-
-                ("LEFTPADDING", (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4)
-            ]
-        )
-    )
-
-    story.append(score_table)
-
-    story.append(
-        Spacer(1, 0.15 * inch)
-    )
-
-    story.append(
-        Paragraph(
-            f"<b>Status:</b> {status}",
-            ParagraphStyle(
-                "StatusStyle",
-                parent=heading_style,
-                alignment=TA_CENTER,
-                fontSize=14
+            make_paragraph(
+                "STATUS",
+                small_style
             )
-        )
-    )
-
-    story.append(PageBreak())
-
-
-    # ========================================================
-    # EXECUTIVE SUMMARY
-    # ========================================================
-
-    story.append(
-        Paragraph(
-            "Executive Summary",
-            title_style
-        )
-    )
-
-    story.append(
-        Paragraph(
-            """
-            This report provides an assessment of the cloud infrastructure
-            based on IAM users, EC2 instances, S3 buckets and Security Groups.
-            CyberGuardX analyzes cloud resources, identifies potential risks,
-            calculates an overall security score, and generates recommendations
-            to improve the cloud security posture.
-            """,
-            normal_style
-        )
-    )
-
-
-    # ========================================================
-    # INFRASTRUCTURE SUMMARY
-    # ========================================================
-
-    story.append(
-        Paragraph(
-            "Infrastructure Summary",
-            heading_style
-        )
-    )
-
-    resource_table = create_table(
-        [
-            ["Resource", "Count"],
-            ["IAM Users", len(iam_result)],
-            ["EC2 Instances", len(ec2_result)],
-            ["S3 Buckets", len(s3_result)],
-            ["Security Groups", len(sg_result)]
         ],
-        [250, 110]
+
+        [
+            make_paragraph(
+                report_type,
+                normal_style
+            ),
+
+            make_paragraph(
+                f"{score}/100",
+                normal_style
+            ),
+
+            make_paragraph(
+                status,
+                normal_style
+            )
+        ],
+
+        [
+            make_paragraph(
+                "USER",
+                small_style
+            ),
+
+            make_paragraph(
+                "GENERATED",
+                small_style
+            ),
+
+            make_paragraph(
+                "DATE",
+                small_style
+            )
+        ],
+
+        [
+            make_paragraph(
+                username,
+                normal_style
+            ),
+
+            make_paragraph(
+                datetime.now().strftime(
+                    "%I:%M %p"
+                ),
+                normal_style
+            ),
+
+            make_paragraph(
+                datetime.now().strftime(
+                    "%d-%m-%Y"
+                ),
+                normal_style
+            )
+        ]
+    ]
+
+
+    summary_table = Table(
+
+        summary_data,
+
+        colWidths=[
+            61 * mm,
+            61 * mm,
+            61 * mm
+        ]
     )
 
-    story.append(resource_table)
 
-    story.append(
-        Spacer(1, 0.15 * inch)
+    summary_table.setStyle(
+
+        TableStyle([
+
+            (
+                "BACKGROUND",
+                (0, 0),
+                (-1, -1),
+                colors.HexColor(
+                    "#F3F7FC"
+                )
+            ),
+
+            (
+                "GRID",
+                (0, 0),
+                (-1, -1),
+                0.4,
+                colors.HexColor(
+                    "#D5E0EE"
+                )
+            ),
+
+            (
+                "VALIGN",
+                (0, 0),
+                (-1, -1),
+                "TOP"
+            ),
+
+            (
+                "LEFTPADDING",
+                (0, 0),
+                (-1, -1),
+                7
+            ),
+
+            (
+                "RIGHTPADDING",
+                (0, 0),
+                (-1, -1),
+                7
+            ),
+
+            (
+                "TOPPADDING",
+                (0, 0),
+                (-1, -1),
+                6
+            ),
+
+            (
+                "BOTTOMPADDING",
+                (0, 0),
+                (-1, -1),
+                6
+            )
+        ])
     )
 
 
-    # ========================================================
-    # SECURITY SUMMARY
-    # ========================================================
+    story.append(
+        summary_table
+    )
 
     story.append(
-        Paragraph(
-            "Security Summary",
-            heading_style
+        Spacer(
+            1,
+            10
         )
     )
-
-    summary_table = create_table(
-        [
-            ["Metric", "Value"],
-            ["Overall Score", f"{security_score}%"],
-            ["Risk Status", status],
-            [
-                "Scan Date",
-                datetime.now().strftime("%d-%m-%Y")
-            ]
-        ],
-        [220, 140]
-    )
-
-    story.append(summary_table)
-
-    story.append(PageBreak())
 
 
     # ========================================================
@@ -414,596 +524,1545 @@ def generate_pdf(
     # ========================================================
 
     story.append(
+
         Paragraph(
-            "System Information",
-            title_style
+            "1. System Information",
+            section_style
         )
     )
 
-    story.append(
-        Spacer(1, 0.05 * inch)
+
+    system_info = (
+        report_data.get(
+            "system_info",
+            {}
+        )
+        or {}
     )
 
-    system_data = [
-        ["Property", "Value"]
+
+    system_rows = [
+
+        [
+            make_paragraph(
+                "PROPERTY",
+                small_style
+            ),
+
+            make_paragraph(
+                "VALUE",
+                small_style
+            )
+        ]
     ]
 
-    if system_info:
+
+    if isinstance(
+        system_info,
+        dict
+    ) and system_info:
 
         for key, value in system_info.items():
 
-            system_data.append(
-                [
-                    str(key),
-                    str(value)
-                ]
-            )
+            system_rows.append([
+
+                make_paragraph(
+                    str(key)
+                    .replace(
+                        "_",
+                        " "
+                    )
+                    .title(),
+
+                    normal_style
+                ),
+
+                make_paragraph(
+                    value,
+                    normal_style
+                )
+            ])
 
     else:
 
-        system_data.append(
-            ["Status", "No system information available"]
-        )
+        system_rows.append([
 
-    story.append(
-        create_table(
-            system_data,
-            [180, 180]
-        )
+            make_paragraph(
+                "Information",
+                normal_style
+            ),
+
+            make_paragraph(
+                "No system information was available.",
+                normal_style
+            )
+        ])
+
+
+    system_table = Table(
+
+        system_rows,
+
+        colWidths=[
+            60 * mm,
+            124 * mm
+        ],
+
+        repeatRows=1
     )
 
+
+    system_table.setStyle(
+
+        TableStyle([
+
+            (
+                "BACKGROUND",
+                (0, 0),
+                (-1, 0),
+                colors.HexColor(
+                    "#123B75"
+                )
+            ),
+
+            (
+                "TEXTCOLOR",
+                (0, 0),
+                (-1, 0),
+                colors.white
+            ),
+
+            (
+                "GRID",
+                (0, 0),
+                (-1, -1),
+                0.35,
+                colors.HexColor(
+                    "#D5E0EE"
+                )
+            ),
+
+            (
+                "VALIGN",
+                (0, 0),
+                (-1, -1),
+                "TOP"
+            ),
+
+            (
+                "ROWBACKGROUNDS",
+                (0, 1),
+                (-1, -1),
+                [
+                    colors.white,
+                    colors.HexColor(
+                        "#F7FAFD"
+                    )
+                ]
+            )
+        ])
+    )
+
+
     story.append(
-        Spacer(1, 0.2 * inch)
+        system_table
     )
 
 
     # ========================================================
-    # IAM SECURITY ASSESSMENT
+    # CLOUD OVERVIEW
     # ========================================================
 
-    story.append(
-        Paragraph(
-            "IAM Security Assessment",
-            title_style
+    cloud_resources = [
+
+        (
+            "IAM Users",
+            len(
+                report_data.get(
+                    "iam_result",
+                    []
+                )
+                or []
+            )
+        ),
+
+        (
+            "EC2 Instances",
+            len(
+                report_data.get(
+                    "ec2_result",
+                    []
+                )
+                or []
+            )
+        ),
+
+        (
+            "S3 Buckets",
+            len(
+                report_data.get(
+                    "s3_result",
+                    []
+                )
+                or []
+            )
+        ),
+
+        (
+            "Security Groups",
+            len(
+                report_data.get(
+                    "sg_result",
+                    []
+                )
+                or []
+            )
         )
-    )
-
-    story.append(
-        Spacer(1, 0.05 * inch)
-    )
-
-    iam_table = [
-        [
-            "User",
-            "Admin",
-            "MFA",
-            "Status",
-            "Recommendation"
-        ]
     ]
 
-    for user in iam_result:
 
-        mfa_enabled = user.get("mfa_enabled", False)
-        is_admin = user.get("is_admin", False)
+    if any(
+        value > 0
+        for _, value in cloud_resources
+    ):
 
-        recommendation = "No Action Required"
+        story.append(
 
-        if not mfa_enabled:
+            Paragraph(
+                "2. Cloud Infrastructure Overview",
+                section_style
+            )
+        )
 
-            recommendation = "Enable MFA"
 
-        elif is_admin:
+        overview_rows = [
 
-            recommendation = "Review Admin Access"
-
-        iam_table.append(
             [
-                str(user.get("name", "Unknown")),
-                "Yes" if is_admin else "No",
-                "Enabled" if mfa_enabled else "Disabled",
-                "Active" if user.get("active", False) else "Inactive",
-                recommendation
+                make_paragraph(
+                    "RESOURCE",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "COUNT",
+                    small_style
+                )
             ]
-        )
-
-    if len(iam_table) == 1:
-
-        iam_table.append(
-            [
-                "No users",
-                "-",
-                "-",
-                "-",
-                "No IAM data available"
-            ]
-        )
-
-    story.append(
-        create_table(
-            iam_table,
-            [85, 50, 60, 60, 105]
-        )
-    )
-
-    story.append(PageBreak())
-
-
-    # ========================================================
-    # EC2 SECURITY ASSESSMENT
-    # ========================================================
-
-    story.append(
-        Paragraph(
-            "EC2 Security Assessment",
-            title_style
-        )
-    )
-
-    story.append(
-        Spacer(1, 0.05 * inch)
-    )
-
-    ec2_table = [
-        [
-            "Instance ID",
-            "Name",
-            "State",
-            "Risk",
-            "Recommendation"
         ]
+
+
+        for name, value in cloud_resources:
+
+            overview_rows.append([
+
+                make_paragraph(
+                    name,
+                    normal_style
+                ),
+
+                make_paragraph(
+                    value,
+                    normal_style
+                )
+            ])
+
+
+        overview_table = Table(
+
+            overview_rows,
+
+            colWidths=[
+                130 * mm,
+                54 * mm
+            ],
+
+            repeatRows=1
+        )
+
+
+        overview_table.setStyle(
+
+            TableStyle([
+
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        "#123B75"
+                    )
+                ),
+
+                (
+                    "TEXTCOLOR",
+                    (0, 0),
+                    (-1, 0),
+                    colors.white
+                ),
+
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.35,
+                    colors.HexColor(
+                        "#D5E0EE"
+                    )
+                ),
+
+                (
+                    "ALIGN",
+                    (1, 1),
+                    (1, -1),
+                    "CENTER"
+                )
+            ])
+        )
+
+
+        story.append(
+            overview_table
+        )
+
+
+    # ========================================================
+    # RISK FINDINGS
+    # ========================================================
+
+    risks = (
+        report_data.get(
+            "risks",
+            []
+        )
+        or []
+    )
+
+
+    if risks:
+
+        story.append(
+
+            Paragraph(
+                "3. Risk Findings",
+                section_style
+            )
+        )
+
+
+        finding_rows = [
+
+            [
+                make_paragraph(
+                    "#",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "LEVEL",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "FINDING",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "DETAILS",
+                    small_style
+                )
+            ]
+        ]
+
+
+        for index, item in enumerate(
+            risks,
+            1
+        ):
+
+            finding_rows.append([
+
+                make_paragraph(
+                    index,
+                    small_style
+                ),
+
+                make_paragraph(
+                    get_risk(item),
+                    small_style
+                ),
+
+                make_paragraph(
+
+                    get_value(
+                        item,
+                        "title",
+                        "finding",
+                        "issue",
+                        default=
+                            "Security Finding"
+                    ),
+
+                    small_style
+                ),
+
+                make_paragraph(
+
+                    get_value(
+                        item,
+                        "description",
+                        "details",
+                        "message",
+                        default=
+                            "Review this finding."
+                    ),
+
+                    small_style
+                )
+            ])
+
+
+        finding_table = Table(
+
+            finding_rows,
+
+            colWidths=[
+                10 * mm,
+                25 * mm,
+                50 * mm,
+                99 * mm
+            ],
+
+            repeatRows=1
+        )
+
+
+        finding_table.setStyle(
+
+            TableStyle([
+
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        "#123B75"
+                    )
+                ),
+
+                (
+                    "TEXTCOLOR",
+                    (0, 0),
+                    (-1, 0),
+                    colors.white
+                ),
+
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.3,
+                    colors.HexColor(
+                        "#D5E0EE"
+                    )
+                ),
+
+                (
+                    "VALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "TOP"
+                )
+            ])
+        )
+
+
+        story.append(
+            finding_table
+        )
+
+
+    # ========================================================
+    # RESOURCE TABLES
+    # ========================================================
+
+    resources = [
+
+        (
+            "4. IAM Security Scan",
+            report_data.get(
+                "iam_result",
+                []
+            )
+            or []
+        ),
+
+        (
+            "5. EC2 Security Scan",
+            report_data.get(
+                "ec2_result",
+                []
+            )
+            or []
+        ),
+
+        (
+            "6. S3 Bucket Security",
+            report_data.get(
+                "s3_result",
+                []
+            )
+            or []
+        ),
+
+        (
+            "7. Security Group Analysis",
+            report_data.get(
+                "sg_result",
+                []
+            )
+            or []
+        )
     ]
 
-    for instance in ec2_result:
 
-        risk = instance.get("risk", "Low")
+    for heading, items in resources:
 
-        recommendation = "No Action Required"
+        if not items:
+            continue
 
-        if risk == "Medium":
 
-            recommendation = "Review Configuration"
+        story.append(
 
-        elif risk == "High":
+            Paragraph(
+                heading,
+                section_style
+            )
+        )
 
-            recommendation = "Immediate Investigation"
 
-        ec2_table.append(
+        if not isinstance(
+            items[0],
+            dict
+        ):
+
+            story.append(
+
+                make_paragraph(
+                    str(items),
+                    normal_style
+                )
+            )
+
+            continue
+
+
+        keys = list(
+            items[0].keys()
+        )
+
+
+        rows = [
+
             [
-                str(instance.get("id", "Unknown")),
-                str(instance.get("name", "Unknown")),
-                str(instance.get("state", "Unknown")),
-                risk,
-                recommendation
+                make_paragraph(
+                    str(key)
+                    .replace(
+                        "_",
+                        " "
+                    )
+                    .upper(),
+
+                    small_style
+                )
+
+                for key in keys
             ]
-        )
-
-    if len(ec2_table) == 1:
-
-        ec2_table.append(
-            [
-                "No instances",
-                "-",
-                "-",
-                "-",
-                "No EC2 data available"
-            ]
-        )
-
-    story.append(
-        create_table(
-            ec2_table,
-            [75, 90, 55, 50, 90]
-        )
-    )
-
-    story.append(PageBreak())
-
-
-    # ========================================================
-    # S3 SECURITY ASSESSMENT
-    # ========================================================
-
-    story.append(
-        Paragraph(
-            "S3 Security Assessment",
-            title_style
-        )
-    )
-
-    story.append(
-        Spacer(1, 0.05 * inch)
-    )
-
-    s3_table = [
-        [
-            "Bucket",
-            "Risk",
-            "Recommendation"
         ]
-    ]
 
-    for bucket in s3_result:
 
-        risk = bucket.get("risk", "Low")
+        for item in items:
 
-        recommendation = "No Action Required"
+            rows.append([
 
-        if risk == "High":
+                make_paragraph(
+                    item.get(
+                        key,
+                        ""
+                    ),
+                    small_style
+                )
 
-            recommendation = "Restrict Public Access"
+                for key in keys
+            ])
 
-        elif risk == "Medium":
 
-            recommendation = "Review Bucket Permissions"
-
-        s3_table.append(
-            [
-                str(bucket.get("name", "Unknown")),
-                risk,
-                recommendation
-            ]
+        available_width = (
+            184 * mm
         )
 
-    if len(s3_table) == 1:
 
-        s3_table.append(
-            [
-                "No buckets",
-                "-",
-                "No S3 data available"
-            ]
+        column_width = (
+            available_width
+            / max(
+                len(keys),
+                1
+            )
         )
 
-    story.append(
-        create_table(
-            s3_table,
-            [150, 60, 190]
-        )
-    )
 
-    story.append(PageBreak())
+        resource_table = Table(
+
+            rows,
+
+            colWidths=[
+                column_width
+            ] * len(keys),
+
+            repeatRows=1
+        )
+
+
+        resource_table.setStyle(
+
+            TableStyle([
+
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        "#123B75"
+                    )
+                ),
+
+                (
+                    "TEXTCOLOR",
+                    (0, 0),
+                    (-1, 0),
+                    colors.white
+                ),
+
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.25,
+                    colors.HexColor(
+                        "#D5E0EE"
+                    )
+                ),
+
+                (
+                    "VALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "TOP"
+                ),
+
+                (
+                    "ROWBACKGROUNDS",
+                    (0, 1),
+                    (-1, -1),
+                    [
+                        colors.white,
+                        colors.HexColor(
+                            "#F7FAFD"
+                        )
+                    ]
+                ),
+
+                (
+                    "LEFTPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    4
+                ),
+
+                (
+                    "RIGHTPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    4
+                ),
+
+                (
+                    "TOPPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    4
+                ),
+
+                (
+                    "BOTTOMPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    4
+                )
+            ])
+        )
+
+
+        story.append(
+            resource_table
+        )
 
 
     # ========================================================
-    # SECURITY GROUP ASSESSMENT
+    # ALERTS
     # ========================================================
 
-    story.append(
-        Paragraph(
-            "Security Group Assessment",
-            title_style
+    alerts = (
+        report_data.get(
+            "alerts",
+            []
         )
+        or []
     )
 
-    story.append(
-        Spacer(1, 0.05 * inch)
-    )
 
-    sg_table = [
-        [
-            "Group",
-            "Port",
-            "Source",
-            "Risk",
-            "Recommendation"
+    if alerts:
+
+        story.append(
+            PageBreak()
+        )
+
+
+        story.append(
+
+            Paragraph(
+                "8. Security Alerts Center",
+                section_style
+            )
+        )
+
+
+        alert_rows = [
+
+            [
+                make_paragraph(
+                    "ALERT",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "SEVERITY",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "DETAILS",
+                    small_style
+                )
+            ]
         ]
-    ]
 
-    for sg in sg_result:
 
-        port = str(sg.get("port", ""))
-        source = str(sg.get("source", ""))
-        risk = sg.get("risk", "Low")
+        for item in alerts:
 
-        recommendation = "No Action Required"
+            alert_rows.append([
 
-        if port == "22" and source == "0.0.0.0/0":
+                make_paragraph(
+                    get_value(
+                        item,
+                        "title",
+                        "finding",
+                        "alert",
+                        default=
+                            "Security Alert"
+                    ),
+                    small_style
+                ),
 
-            recommendation = "Restrict SSH Access"
+                make_paragraph(
+                    get_risk(item),
+                    small_style
+                ),
 
-        elif risk == "High":
+                make_paragraph(
+                    get_value(
+                        item,
+                        "message",
+                        "details",
+                        "description",
+                        default=
+                            "Security event detected."
+                    ),
+                    small_style
+                )
+            ])
 
-            recommendation = "Review Firewall Rules"
 
-        sg_table.append(
-            [
-                str(sg.get("name", "Unknown")),
-                port,
-                source,
-                risk,
-                recommendation
-            ]
+        alert_table = Table(
+
+            alert_rows,
+
+            colWidths=[
+                55 * mm,
+                30 * mm,
+                99 * mm
+            ],
+
+            repeatRows=1
         )
 
-    if len(sg_table) == 1:
 
-        sg_table.append(
-            [
-                "No groups",
-                "-",
-                "-",
-                "-",
-                "No Security Group data"
-            ]
+        alert_table.setStyle(
+
+            TableStyle([
+
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        "#123B75"
+                    )
+                ),
+
+                (
+                    "TEXTCOLOR",
+                    (0, 0),
+                    (-1, 0),
+                    colors.white
+                ),
+
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.3,
+                    colors.HexColor(
+                        "#D5E0EE"
+                    )
+                ),
+
+                (
+                    "VALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "TOP"
+                )
+            ])
         )
 
-    story.append(
-        create_table(
-            sg_table,
-            [90, 45, 90, 50, 125]
-        )
-    )
 
-    story.append(PageBreak())
+        story.append(
+            alert_table
+        )
 
 
     # ========================================================
     # SECURITY ADVISOR
     # ========================================================
 
-    story.append(
-        Paragraph(
-            "Security Advisor",
-            title_style
+    advisor = (
+        report_data.get(
+            "advisor_result",
+            []
         )
+        or []
     )
 
-    story.append(
-        Spacer(1, 0.05 * inch)
-    )
 
-    if advisor_result:
+    if advisor:
 
-        if isinstance(advisor_result, dict):
+        story.append(
 
-            advisor_rows = [
-                [
-                    "Category",
-                    "Severity",
-                    "Recommendation"
-                ]
-            ]
-
-            for category, details in advisor_result.items():
-
-                if isinstance(details, dict):
-
-                    severity = details.get(
-                        "severity",
-                        details.get("risk", "Info")
-                    )
-
-                    recommendation = details.get(
-                        "recommendation",
-                        details.get("message", str(details))
-                    )
-
-                else:
-
-                    severity = "Info"
-                    recommendation = str(details)
-
-                advisor_rows.append(
-                    [
-                        str(category),
-                        str(severity),
-                        str(recommendation)
-                    ]
-                )
-
-            story.append(
-                create_table(
-                    advisor_rows,
-                    [100, 70, 240]
-                )
+            Paragraph(
+                "9. CyberGuardX Security Advisor",
+                section_style
             )
+        )
 
-        elif isinstance(advisor_result, list):
 
-            advisor_rows = [
-                [
-                    "Finding",
-                    "Severity",
-                    "Recommendation"
-                ]
-            ]
+        advisor_rows = [
 
-            for item in advisor_result:
+            [
+                make_paragraph(
+                    "RECOMMENDATION",
+                    small_style
+                ),
 
-                if isinstance(item, dict):
-
-                    finding = item.get(
-                        "finding",
-                        item.get(
-                            "category",
-                            "Security Finding"
-                        )
-                    )
-
-                    severity = item.get(
-                        "severity",
-                        item.get(
-                            "risk",
-                            "Info"
-                        )
-                    )
-
-                    recommendation = item.get(
-                        "recommendation",
-                        item.get(
-                            "message",
-                            "Review finding"
-                        )
-                    )
-
-                    advisor_rows.append(
-                        [
-                            str(finding),
-                            str(severity),
-                            str(recommendation)
-                        ]
-                    )
-
-                else:
-
-                    advisor_rows.append(
-                        [
-                            "Security Finding",
-                            "Info",
-                            str(item)
-                        ]
-                    )
-
-            story.append(
-                create_table(
-                    advisor_rows,
-                    [100, 70, 240]
+                make_paragraph(
+                    "ACTION",
+                    small_style
                 )
-            )
+            ]
+        ]
+
+
+        if isinstance(
+            advisor,
+            dict
+        ):
+
+            for key, value in advisor.items():
+
+                advisor_rows.append([
+
+                    make_paragraph(
+                        str(key)
+                        .replace(
+                            "_",
+                            " "
+                        )
+                        .title(),
+
+                        small_style
+                    ),
+
+                    make_paragraph(
+                        value,
+                        small_style
+                    )
+                ])
 
         else:
 
-            story.append(
-                Paragraph(
-                    str(advisor_result),
-                    normal_style
-                )
-            )
+            for index, item in enumerate(
+                advisor,
+                1
+            ):
 
-    else:
+                if isinstance(
+                    item,
+                    dict
+                ):
+
+                    text = get_value(
+                        item,
+                        "recommendation",
+                        "advice",
+                        "message",
+                        default=str(item)
+                    )
+
+                else:
+
+                    text = str(item)
+
+
+                advisor_rows.append([
+
+                    make_paragraph(
+                        f"Recommendation {index}",
+                        small_style
+                    ),
+
+                    make_paragraph(
+                        text,
+                        small_style
+                    )
+                ])
+
+
+        advisor_table = Table(
+
+            advisor_rows,
+
+            colWidths=[
+                55 * mm,
+                129 * mm
+            ],
+
+            repeatRows=1
+        )
+
+
+        advisor_table.setStyle(
+
+            TableStyle([
+
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        "#123B75"
+                    )
+                ),
+
+                (
+                    "TEXTCOLOR",
+                    (0, 0),
+                    (-1, 0),
+                    colors.white
+                ),
+
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.3,
+                    colors.HexColor(
+                        "#D5E0EE"
+                    )
+                ),
+
+                (
+                    "VALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "TOP"
+                )
+            ])
+        )
+
 
         story.append(
+            advisor_table
+        )
+
+
+    # ========================================================
+    # COMPLIANCE
+    # ========================================================
+
+    compliance = (
+        report_data.get(
+            "compliance_report",
+            []
+        )
+        or []
+    )
+
+
+    if compliance:
+
+        story.append(
+
             Paragraph(
-                "No security advisor findings available.",
+                "10. Compliance Dashboard",
+                section_style
+            )
+        )
+
+
+        compliance_rows = [
+
+            [
+                make_paragraph(
+                    "CONTROL",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "STATUS / DETAILS",
+                    small_style
+                )
+            ]
+        ]
+
+
+        for item in compliance:
+
+            if isinstance(
+                item,
+                dict
+            ):
+
+                name = get_value(
+                    item,
+                    "control",
+                    "name",
+                    "title",
+                    default=
+                        "Security Control"
+                )
+
+                detail = get_value(
+                    item,
+                    "status",
+                    "details",
+                    "description",
+                    default=
+                        str(item)
+                )
+
+            else:
+
+                name = "Security Control"
+
+                detail = str(item)
+
+
+            compliance_rows.append([
+
+                make_paragraph(
+                    name,
+                    small_style
+                ),
+
+                make_paragraph(
+                    detail,
+                    small_style
+                )
+            ])
+
+
+        compliance_table = Table(
+
+            compliance_rows,
+
+            colWidths=[
+                60 * mm,
+                124 * mm
+            ],
+
+            repeatRows=1
+        )
+
+
+        compliance_table.setStyle(
+
+            TableStyle([
+
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        "#123B75"
+                    )
+                ),
+
+                (
+                    "TEXTCOLOR",
+                    (0, 0),
+                    (-1, 0),
+                    colors.white
+                ),
+
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.3,
+                    colors.HexColor(
+                        "#D5E0EE"
+                    )
+                ),
+
+                (
+                    "VALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "TOP"
+                )
+            ])
+        )
+
+
+        story.append(
+            compliance_table
+        )
+
+
+    # ========================================================
+    # DEVICE INFORMATION
+    # ========================================================
+
+    device_items = (
+        report_data.get(
+            "device_results",
+            []
+        )
+        or []
+    )
+
+
+    if device_items:
+
+        story.append(
+
+            Paragraph(
+                "11. Device Security Assessment",
+                section_style
+            )
+        )
+
+
+        story.append(
+
+            make_paragraph(
+
+                (
+                    f"Device Score: "
+                    f"{report_data.get('device_score', 0)}/100 | "
+                    f"Status: "
+                    f"{report_data.get('device_status', 'Not Scanned')} | "
+                    f"High: "
+                    f"{report_data.get('device_high_risks', 0)} | "
+                    f"Medium: "
+                    f"{report_data.get('device_medium_risks', 0)} | "
+                    f"Low: "
+                    f"{report_data.get('device_low_risks', 0)}"
+                ),
+
                 normal_style
             )
         )
 
-    story.append(PageBreak())
+
+        device_rows = [
+
+            [
+                make_paragraph(
+                    "CATEGORY",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "FINDING",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "DETAILS",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "RISK",
+                    small_style
+                )
+            ]
+        ]
+
+
+        for item in device_items:
+
+            device_rows.append([
+
+                make_paragraph(
+                    get_value(
+                        item,
+                        "category",
+                        default="Unknown"
+                    ),
+                    small_style
+                ),
+
+                make_paragraph(
+                    get_value(
+                        item,
+                        "finding",
+                        default="Unknown"
+                    ),
+                    small_style
+                ),
+
+                make_paragraph(
+                    get_value(
+                        item,
+                        "details",
+                        default=
+                            "No details available."
+                    ),
+                    small_style
+                ),
+
+                make_paragraph(
+                    get_risk(item),
+                    small_style
+                )
+            ])
+
+
+        device_table = Table(
+
+            device_rows,
+
+            colWidths=[
+                35 * mm,
+                42 * mm,
+                82 * mm,
+                25 * mm
+            ],
+
+            repeatRows=1
+        )
+
+
+        device_table.setStyle(
+
+            TableStyle([
+
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        "#123B75"
+                    )
+                ),
+
+                (
+                    "TEXTCOLOR",
+                    (0, 0),
+                    (-1, 0),
+                    colors.white
+                ),
+
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.3,
+                    colors.HexColor(
+                        "#D5E0EE"
+                    )
+                ),
+
+                (
+                    "VALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "TOP"
+                )
+            ])
+        )
+
+
+        story.append(
+            device_table
+        )
+
+
+    # ========================================================
+    # DEVICE RECOMMENDATIONS
+    # ========================================================
+
+    recommendations = (
+        report_data.get(
+            "device_recommendations",
+            []
+        )
+        or []
+    )
+
+
+    if recommendations:
+
+        story.append(
+
+            Paragraph(
+                "12. Device Security Recommendations",
+                section_style
+            )
+        )
+
+
+        for index, recommendation in enumerate(
+            recommendations,
+            1
+        ):
+
+            story.append(
+
+                make_paragraph(
+
+                    f"{index}. {recommendation}",
+
+                    normal_style
+                )
+            )
 
 
     # ========================================================
     # SCAN HISTORY
     # ========================================================
 
-    story.append(
-        Paragraph(
-            "Scan History",
-            title_style
+    history = (
+        report_data.get(
+            "scan_history",
+            []
         )
+        or []
     )
 
-    story.append(
-        Spacer(1, 0.05 * inch)
-    )
 
-    if scan_history:
+    if history:
 
-        history_table = [
+        story.append(
+
+            Paragraph(
+                "13. Scan History",
+                section_style
+            )
+        )
+
+
+        history_rows = [
+
             [
-                "Scan",
-                "Date",
-                "Time",
-                "Score",
-                "Status"
+                make_paragraph(
+                    "SCAN",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "DATE",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "SCORE",
+                    small_style
+                ),
+
+                make_paragraph(
+                    "STATUS",
+                    small_style
+                )
             ]
         ]
 
-        for index, scan in enumerate(
-            scan_history,
-            start=1
-        ):
 
-            if isinstance(scan, dict):
+        for item in history:
 
-                scan_id = scan.get(
-                    "scan_id",
-                    index
+            if isinstance(
+                item,
+                dict
+            ):
+
+                scan_name = get_value(
+                    item,
+                    "type",
+                    "scan_type",
+                    default=
+                        "Cloud Security Scan"
                 )
 
-                date = scan.get(
+                date = get_value(
+                    item,
                     "date",
-                    "N/A"
+                    "timestamp",
+                    default=
+                        "Recent"
                 )
 
-                time = scan.get(
-                    "time",
-                    "N/A"
-                )
-
-                score = scan.get(
+                hist_score = get_value(
+                    item,
                     "score",
-                    scan.get(
-                        "security_score",
-                        "N/A"
-                    )
+                    default="-"
                 )
 
-                scan_status = scan.get(
+                hist_status = get_value(
+                    item,
                     "status",
-                    scan.get(
-                        "risk_status",
-                        "N/A"
-                    )
+                    default=
+                        "Completed"
                 )
 
             else:
 
-                scan_id = index
-                date = "N/A"
-                time = "N/A"
-                score = str(scan)
-                scan_status = "Recorded"
+                scan_name = "Security Scan"
 
-            history_table.append(
-                [
-                    f"Scan {scan_id}",
-                    str(date),
-                    str(time),
-                    str(score),
-                    str(scan_status)
-                ]
-            )
+                date = str(item)
 
-        story.append(
-            create_table(
-                history_table,
-                [65, 75, 85, 55, 80]
-            )
+                hist_score = "-"
+
+                hist_status = "Completed"
+
+
+            history_rows.append([
+
+                make_paragraph(
+                    scan_name,
+                    small_style
+                ),
+
+                make_paragraph(
+                    date,
+                    small_style
+                ),
+
+                make_paragraph(
+                    hist_score,
+                    small_style
+                ),
+
+                make_paragraph(
+                    hist_status,
+                    small_style
+                )
+            ])
+
+
+        history_table = Table(
+
+            history_rows,
+
+            colWidths=[
+                60 * mm,
+                55 * mm,
+                30 * mm,
+                39 * mm
+            ],
+
+            repeatRows=1
         )
 
-    else:
+
+        history_table.setStyle(
+
+            TableStyle([
+
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        "#123B75"
+                    )
+                ),
+
+                (
+                    "TEXTCOLOR",
+                    (0, 0),
+                    (-1, 0),
+                    colors.white
+                ),
+
+                (
+                    "GRID",
+                    (0, 0),
+                    (-1, -1),
+                    0.3,
+                    colors.HexColor(
+                        "#D5E0EE"
+                    )
+                )
+            ])
+        )
+
 
         story.append(
-            Paragraph(
-                "No previous scan history available.",
-                normal_style
-            )
+            history_table
         )
 
 
     # ========================================================
-    # FINAL FOOTER
+    # FOOTER
     # ========================================================
 
     story.append(
-        Spacer(1, 0.2 * inch)
+        Spacer(
+            1,
+            15
+        )
     )
 
-    footer_style = ParagraphStyle(
-        "Footer",
-        parent=small_style,
-        alignment=TA_CENTER,
-        textColor=HexColor("#666666"),
-        spaceBefore=5
-    )
 
     story.append(
+
         Paragraph(
-            "<b>CyberGuardX</b> — Cloud Security Monitoring "
-            "and Risk Assessment Platform",
-            footer_style
+
+            "CyberGuardX · Cloud & Device Security Intelligence · Generated automatically",
+
+            subtitle_style
         )
     )
 
@@ -1012,14 +2071,44 @@ def generate_pdf(
     # BUILD PDF
     # ========================================================
 
-    doc.build(story)
+    document.build(
+        story
+    )
+
 
     buffer.seek(0)
 
-    return send_file(
-        buffer,
-        download_name="CyberGuardX_Report.pdf",
-        as_attachment=True,
-        mimetype="application/pdf"
-    )
 
+    # ========================================================
+    # SEND FILE
+    # ========================================================
+
+    if report_data.get(
+        "report_type",
+        ""
+    ).lower().startswith(
+        "device"
+    ):
+
+        filename = (
+            "CyberGuardX_Device_Security_Report.pdf"
+        )
+
+    else:
+
+        filename = (
+            "CyberGuardX_Cloud_Security_Report.pdf"
+        )
+
+
+    return send_file(
+
+        buffer,
+
+        as_attachment=True,
+
+        download_name=filename,
+
+        mimetype=
+            "application/pdf"
+    )

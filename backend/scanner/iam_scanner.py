@@ -1,4 +1,8 @@
-import random
+# ============================================================
+# CyberGuardX
+# IAM Security Scanner
+# Demo / Development Version
+# ============================================================
 
 
 class IAMScanner:
@@ -73,6 +77,4 @@ class IAMScanner:
 
         ]
 
-        count = random.randint(4, 7)
-
-        return random.sample(users, count)
+        return users

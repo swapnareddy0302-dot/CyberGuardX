@@ -1,11 +1,8 @@
-import random
-
-
 class EC2Scanner:
 
     def scan(self):
 
-        instances = [
+        return [
 
             {
                 "id": "i-0a1b2c3d4e5f",
@@ -72,7 +69,3 @@ class EC2Scanner:
             }
 
         ]
-
-        count = random.randint(4, 7)
-
-        return random.sample(instances, count)

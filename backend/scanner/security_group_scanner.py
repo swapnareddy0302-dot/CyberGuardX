@@ -1,4 +1,8 @@
-import random
+# ============================================================
+# CyberGuardX
+# Security Group Scanner
+# Demo / Development Version
+# ============================================================
 
 
 class SecurityGroupScanner:
@@ -65,6 +69,4 @@ class SecurityGroupScanner:
 
         ]
 
-        count = random.randint(4, 7)
-
-        return random.sample(security_groups, count)
+        return security_groups

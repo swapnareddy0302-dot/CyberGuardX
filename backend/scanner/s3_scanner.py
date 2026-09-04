@@ -1,4 +1,8 @@
-import random
+# ============================================================
+# CyberGuardX
+# S3 Security Scanner
+# Demo / Development Version
+# ============================================================
 
 
 class S3Scanner:
@@ -8,63 +12,77 @@ class S3Scanner:
         buckets = [
 
             {
-                "name": "company-backup",
+                "name": "company-production-data",
+                "region": "ap-south-1",
+                "public_access": True,
+                "encryption": False,
+                "versioning": True,
+                "risk": "High"
+            },
+
+            {
+                "name": "company-backups",
+                "region": "ap-south-1",
                 "public_access": False,
                 "encryption": True,
+                "versioning": True,
                 "risk": "Low"
+            },
+
+            {
+                "name": "application-assets",
+                "region": "ap-south-1",
+                "public_access": False,
+                "encryption": True,
+                "versioning": True,
+                "risk": "Low"
+            },
+
+            {
+                "name": "development-data",
+                "region": "ap-south-1",
+                "public_access": True,
+                "encryption": True,
+                "versioning": False,
+                "risk": "Medium"
+            },
+
+            {
+                "name": "security-logs",
+                "region": "ap-south-1",
+                "public_access": False,
+                "encryption": True,
+                "versioning": True,
+                "risk": "Low"
+            },
+
+            {
+                "name": "analytics-data",
+                "region": "ap-south-1",
+                "public_access": False,
+                "encryption": True,
+                "versioning": False,
+                "risk": "Low"
+            },
+
+            {
+                "name": "temporary-storage",
+                "region": "ap-south-1",
+                "public_access": True,
+                "encryption": False,
+                "versioning": False,
+                "risk": "High"
             },
 
             {
                 "name": "website-assets",
-                "public_access": True,
-                "encryption": False,
-                "risk": "High"
-            },
-
-            {
-                "name": "application-logs",
-                "public_access": False,
-                "encryption": False,
-                "risk": "Medium"
-            },
-
-            {
-                "name": "customer-data",
+                "region": "ap-south-1",
                 "public_access": False,
                 "encryption": True,
-                "risk": "Low"
-            },
-
-            {
-                "name": "development-files",
-                "public_access": True,
-                "encryption": False,
-                "risk": "High"
-            },
-
-            {
-                "name": "archive-storage",
-                "public_access": False,
-                "encryption": True,
-                "risk": "Low"
-            },
-
-            {
-                "name": "media-assets",
-                "public_access": True,
-                "encryption": True,
-                "risk": "Medium"
-            },
-
-            {
-                "name": "audit-logs",
-                "public_access": False,
-                "encryption": True,
+                "versioning": True,
                 "risk": "Low"
             }
 
         ]
 
-        count = random.randint(4, 7)
-
-        return random.sample(buckets, count)
+        return buckets

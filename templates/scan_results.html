@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CyberGuardX | Cloud Security Report</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     NAVBAR
+========================================================= -->
+
+<nav class="navbar">
+
+    <a href="{{ url_for('dashboard') }}"
+       class="brand">
+
+        <!-- CyberGuardX Inline Logo -->
+        <svg class="brand-logo"
+             viewBox="0 0 100 100"
+             xmlns="http://www.w3.org/2000/svg">
+
+            <defs>
+
+                <linearGradient id="logoGradient"
+                                x1="0"
+                                y1="0"
+                                x2="1"
+                                y2="1">
+
+                    <stop offset="0%"
+                          stop-color="#60a5fa"/>
+
+                    <stop offset="50%"
+                          stop-color="#2563eb"/>
+
+                    <stop offset="100%"
+                          stop-color="#7c3aed"/>
+
+                </linearGradient>
+
+            </defs>
+
+
+            <!-- Shield -->
+
+            <path d="M50 6
+                     L87 19
+                     V47
+                     C87 69 72 86 50 94
+                     C28 86 13 69 13 47
+                     V19 Z"
+
+                  fill="none"
+                  stroke="url(#logoGradient)"
+                  stroke-width="7"/>
+
+
+            <!-- Cloud -->
+
+            <path d="M31 49
+                     C27 49 24 46 24 42
+                     C24 38 27 35 31 35
+                     C32 28 38 24 45 24
+                     C52 24 57 28 59 34
+                     C60 34 61 34 62 34
+                     C68 34 72 38 72 44
+                     C72 50 68 54 62 54
+                     H31"
+
+                  fill="none"
+                  stroke="#60a5fa"
+                  stroke-width="5"
+                  stroke-linecap="round"/>
+
+
+            <!-- Lock -->
+
+            <rect x="39"
+                  y="51"
+                  width="22"
+                  height="18"
+                  rx="3"
+                  fill="none"
+                  stroke="#93c5fd"
+                  stroke-width="4"/>
+
+            <path d="M44 51 V46
+                     C44 42 47 39 50 39
+                     C53 39 56 42 56 46
+                     V51"
+
+                  fill="none"
+                  stroke="#93c5fd"
+                  stroke-width="4"
+                  stroke-linecap="round"/>
+
+
+            <!-- X -->
+
+            <path d="M43 58 L57 67
+                     M57 58 L43 67"
+
+                  stroke="#a78bfa"
+                  stroke-width="3"
+                  stroke-linecap="round"/>
+
+        </svg>
+
+
+        <span class="brand-name">
+            CyberGuardX
+        </span>
+
+    </a>
+
+
+    <div class="nav-right">
+
+        <a href="{{ url_for('dashboard') }}"
+           class="nav-back-btn">
+
+            ← Dashboard
+
+        </a>
+
+
+        <span class="username">
+
+            {{ session.get("username", "User") }}
+
+        </span>
+
+
+        <a href="{{ url_for('logout') }}"
+           class="logout-btn">
+
+            Logout
+
+        </a>
+
+    </div>
+
+</nav>
+
+
+
+<!-- =========================================================
+     MAIN REPORT
+========================================================= -->
+
+<main class="report-container">
+
+
+    <!-- =====================================================
+         REPORT HEADER
+    ====================================================== -->
+
+    <section class="report-header">
+
+        <div class="report-header-icon">
+            ☁️
+        </div>
+
+        <div>
+
+            <h1>
+                Cloud Security Report
+            </h1>
+
+            <p>
+                CyberGuardX AWS Infrastructure Security Analysis
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         SECURITY POSTURE
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    SECURITY POSTURE
+                </span>
+
+                <h2>
+                    Overall Security Score
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="security-score-card">
+
+            <div class="score-circle">
+
+                <div class="score-number">
+                    {{ score }}
+                </div>
+
+                <div class="score-total">
+                    /100
+                </div>
+
+            </div>
+
+
+            <div class="score-information">
+
+                <span class="score-label">
+                    CURRENT SECURITY STATUS
+                </span>
+
+                <h3>
+                    {{ status }}
+                </h3>
+
+                <p>
+                    Overall cloud security posture based on
+                    detected infrastructure risks.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         INFRASTRUCTURE OVERVIEW
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    SECURITY OVERVIEW
+                </span>
+
+                <h2>
+                    Infrastructure Overview
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="stats-grid">
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    👤
+                </div>
+
+                <strong>
+                    {{ dashboard_stats.get("iam_users", 0) }}
+                </strong>
+
+                <span>
+                    IAM USERS
+                </span>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    🖥️
+                </div>
+
+                <strong>
+                    {{ dashboard_stats.get("ec2_instances", 0) }}
+                </strong>
+
+                <span>
+                    EC2 INSTANCES
+                </span>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    🗄️
+                </div>
+
+                <strong>
+                    {{ dashboard_stats.get("s3_buckets", 0) }}
+                </strong>
+
+                <span>
+                    S3 BUCKETS
+                </span>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    🌐
+                </div>
+
+                <strong>
+                    {{ dashboard_stats.get("security_groups", 0) }}
+                </strong>
+
+                <span>
+                    SECURITY GROUPS
+                </span>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         RISK FINDINGS
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    SECURITY ANALYSIS
+                </span>
+
+                <h2>
+                    Risk Findings
+                </h2>
+
+            </div>
+
+            <span class="section-count">
+                {{ risks|length }} Findings
+            </span>
+
+        </div>
+
+
+        <div class="risk-summary-grid">
+
+            {% set high_count = namespace(value=0) %}
+            {% set medium_count = namespace(value=0) %}
+            {% set low_count = namespace(value=0) %}
+
+
+            {% for risk in risks %}
+
+                {% set level =
+                    risk.get(
+                        "level",
+                        risk.get(
+                            "risk",
+                            risk.get(
+                                "severity",
+                                "Low"
+                            )
+                        )
+                    )|lower
+                %}
+
+
+                {% if level == "high" %}
+
+                    {% set high_count.value =
+                       high_count.value + 1 %}
+
+                {% elif level == "medium" %}
+
+                    {% set medium_count.value =
+                       medium_count.value + 1 %}
+
+                {% else %}
+
+                    {% set low_count.value =
+                       low_count.value + 1 %}
+
+                {% endif %}
+
+            {% endfor %}
+
+
+            <div class="risk-summary high">
+
+                <strong>
+                    {{ high_count.value }}
+                </strong>
+
+                <span>
+                    HIGH RISK
+                </span>
+
+            </div>
+
+
+            <div class="risk-summary medium">
+
+                <strong>
+                    {{ medium_count.value }}
+                </strong>
+
+                <span>
+                    MEDIUM RISK
+                </span>
+
+            </div>
+
+
+            <div class="risk-summary low">
+
+                <strong>
+                    {{ low_count.value }}
+                </strong>
+
+                <span>
+                    LOW RISK
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="finding-list">
+
+            {% for risk in risks %}
+
+                {% set level =
+                    risk.get(
+                        "level",
+                        risk.get(
+                            "risk",
+                            risk.get(
+                                "severity",
+                                "Low"
+                            )
+                        )
+                    )|lower
+                %}
+
+
+                <div class="finding-card">
+
+
+                    <div class="finding-risk">
+
+                        <span class="risk {{ level }}">
+                            {{ level|upper }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="finding-content">
+
+                        <div class="finding-title">
+
+                            {{ risk.get(
+                                "title",
+                                "Security Finding"
+                            ) }}
+
+                        </div>
+
+
+                        <p>
+
+                            {{ risk.get(
+                                "message",
+                                risk.get(
+                                    "finding",
+                                    risk.get(
+                                        "description",
+                                        "Security finding detected."
+                                    )
+                                )
+                            ) }}
+
+                        </p>
+
+
+                        <div class="finding-meta">
+
+                            <span>
+
+                                Service:
+                                <strong>
+                                    {{ risk.get(
+                                        "service",
+                                        "Cloud Security"
+                                    ) }}
+                                </strong>
+
+                            </span>
+
+
+                            {% if risk.get("resource") %}
+
+                                <span>
+
+                                    Resource:
+                                    <strong>
+                                        {{ risk.get("resource") }}
+                                    </strong>
+
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+            {% else %}
+
+                <div class="empty-state">
+
+                    <div>
+                        ✓
+                    </div>
+
+                    <h3>
+                        No Security Risks Detected
+                    </h3>
+
+                    <p>
+                        The current cloud scan did not identify
+                        any significant security findings.
+                    </p>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         SECURITY ALERTS
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    SECURITY MONITORING
+                </span>
+
+                <h2>
+                    Security Alerts Center
+                </h2>
+
+            </div>
+
+            <span class="section-count">
+                {{ alerts|length }} Alerts
+            </span>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Severity
+                        </th>
+
+                        <th>
+                            Service
+                        </th>
+
+                        <th>
+                            Alert
+                        </th>
+
+                        <th>
+                            Time
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for alert in alerts %}
+
+                    {% if alert is mapping %}
+
+                        {% set severity =
+                            alert.get(
+                                "severity",
+                                alert.get(
+                                    "level",
+                                    "Info"
+                                )
+                            )|lower
+                        %}
+
+
+                        <tr>
+
+                            <td>
+
+                                <span class="risk {{ severity }}">
+                                    {{ severity|upper }}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    {{ alert.get(
+                                        "service",
+                                        "System"
+                                    ) }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {{ alert.get(
+                                    "message",
+                                    alert.get(
+                                        "alert",
+                                        alert.get(
+                                            "finding",
+                                            "Security alert"
+                                        )
+                                    )
+                                ) }}
+
+                            </td>
+
+
+                            <td>
+
+                                {{ alert.get(
+                                    "time",
+                                    "--"
+                                ) }}
+
+                            </td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+
+                            <td>
+
+                                <span class="risk info">
+                                    INFO
+                                </span>
+
+                            </td>
+
+                            <td>
+                                System
+                            </td>
+
+                            <td>
+                                {{ alert }}
+                            </td>
+
+                            <td>
+                                --
+                            </td>
+
+                        </tr>
+
+                    {% endif %}
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="4"
+                            class="table-empty">
+
+                            No security alerts detected.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         SECURITY ADVISOR
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    INTELLIGENT SECURITY
+                </span>
+
+                <h2>
+                    CyberGuardX Security Advisor
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="advisor-grid">
+
+        {% if advisor_result %}
+
+            {% if advisor_result is mapping %}
+
+                <div class="advisor-card">
+
+                    <div class="advisor-icon">
+                        🧠
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Security Recommendations
+                        </h3>
+
+                        <p>
+                            {{ advisor_result }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% else %}
+
+                {% for advice in advisor_result %}
+
+                    {% if advice is mapping %}
+
+                        {% set priority =
+                            advice.get(
+                                "priority",
+                                "Medium"
+                            )|lower
+                        %}
+
+
+                        <div class="advisor-card">
+
+                            <div class="advisor-icon">
+                                🧠
+                            </div>
+
+
+                            <div class="advisor-content">
+
+                                <div class="advisor-top">
+
+                                    <span class="advisor-service">
+
+                                        {{ advice.get(
+                                            "service",
+                                            "Security"
+                                        ) }}
+
+                                    </span>
+
+
+                                    <span class="priority {{ priority }}">
+
+                                        {{ priority|upper }}
+
+                                    </span>
+
+                                </div>
+
+
+                                <h3>
+
+                                    {{ advice.get(
+                                        "title",
+                                        "Security Recommendation"
+                                    ) }}
+
+                                </h3>
+
+
+                                <div class="advisor-resource">
+
+                                    Resource:
+                                    <strong>
+
+                                        {{ advice.get(
+                                            "resource",
+                                            "Cloud Environment"
+                                        ) }}
+
+                                    </strong>
+
+                                </div>
+
+
+                                <p>
+
+                                    {{ advice.get(
+                                        "message",
+                                        "Review this security recommendation."
+                                    ) }}
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="advisor-card">
+
+                            <div class="advisor-icon">
+                                🧠
+                            </div>
+
+                            <div>
+
+                                <h3>
+                                    Security Recommendation
+                                </h3>
+
+                                <p>
+                                    {{ advice }}
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            {% endif %}
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div>
+                    ✓
+                </div>
+
+                <h3>
+                    No Additional Recommendations
+                </h3>
+
+                <p>
+                    Your current scan did not generate
+                    additional recommendations.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         COMPLIANCE
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    SECURITY GOVERNANCE
+                </span>
+
+                <h2>
+                    Compliance Dashboard
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Control
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for item in compliance_report %}
+
+                    {% if item is mapping %}
+
+                        <tr>
+
+                            <td>
+
+                                {{ item.get(
+                                    "control",
+                                    item.get(
+                                        "name",
+                                        item.get(
+                                            "title",
+                                            "Security Control"
+                                        )
+                                    )
+                                ) }}
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="compliance-status">
+
+                                    {{ item.get(
+                                        "status",
+                                        "Reviewed"
+                                    )
+                                    }}
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+
+                            <td>
+                                Security Control
+                            </td>
+
+                            <td>
+
+                                <span class="compliance-status">
+                                    {{ item }}
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                    {% endif %}
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="2"
+                            class="table-empty">
+
+                            Compliance information unavailable.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         SYSTEM INFORMATION
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    SYSTEM INTELLIGENCE
+                </span>
+
+                <h2>
+                    System Information
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="system-grid">
+
+        {% if system_info is mapping %}
+
+            {% for key, value in system_info.items() %}
+
+                <div class="system-card">
+
+                    <span class="system-label">
+
+                        {{ key
+                           |replace("_", " ")
+                           |upper }}
+
+                    </span>
+
+
+                    <strong>
+
+                        {{ value }}
+
+                    </strong>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="system-card">
+
+                <span class="system-label">
+                    SYSTEM STATUS
+                </span>
+
+                <strong>
+                    Available
+                </strong>
+
+            </div>
+
+        {% endif %}
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         IAM
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    IDENTITY SECURITY
+                </span>
+
+                <h2>
+                    IAM Security Scan
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            User
+                        </th>
+
+                        <th>
+                            MFA
+                        </th>
+
+                        <th>
+                            Administrator
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Risk
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for item in iam_result %}
+
+                    {% set level =
+                        item.get(
+                            "risk",
+                            "Low"
+                        )|lower
+                    %}
+
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+
+                                {{ item.get(
+                                    "name",
+                                    "IAM User"
+                                ) }}
+
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            {% if item.get("mfa_enabled") %}
+
+                                <span class="status-good">
+                                    Enabled
+                                </span>
+
+                            {% else %}
+
+                                <span class="status-danger">
+                                    Disabled
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if item.get("is_admin") %}
+
+                                <span class="status-danger">
+                                    Yes
+                                </span>
+
+                            {% else %}
+
+                                <span class="status-good">
+                                    No
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.get(
+                                "status",
+                                "Unknown"
+                            ) }}
+
+                        </td>
+
+
+                        <td>
+
+                            <span class="risk {{ level }}">
+                                {{ level|upper }}
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="5"
+                            class="table-empty">
+
+                            No IAM data available.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         EC2
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    COMPUTE SECURITY
+                </span>
+
+                <h2>
+                    EC2 Security Scan
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Instance
+                        </th>
+
+                        <th>
+                            ID
+                        </th>
+
+                        <th>
+                            State
+                        </th>
+
+                        <th>
+                            Public IP
+                        </th>
+
+                        <th>
+                            Risk
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for item in ec2_result %}
+
+                    {% set level =
+                        item.get(
+                            "risk",
+                            "Low"
+                        )|lower
+                    %}
+
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+
+                                {{ item.get(
+                                    "name",
+                                    "EC2 Instance"
+                                ) }}
+
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.get(
+                                "id",
+                                "Unknown"
+                            ) }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.get(
+                                "state",
+                                "Unknown"
+                            ) }}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if item.get("public_ip") %}
+
+                                <span class="status-danger">
+
+                                    {{ item.get("public_ip") }}
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="status-good">
+                                    Private
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            <span class="risk {{ level }}">
+                                {{ level|upper }}
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="5"
+                            class="table-empty">
+
+                            No EC2 data available.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         S3
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    STORAGE SECURITY
+                </span>
+
+                <h2>
+                    S3 Bucket Security
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Bucket
+                        </th>
+
+                        <th>
+                            Region
+                        </th>
+
+                        <th>
+                            Public Access
+                        </th>
+
+                        <th>
+                            Encryption
+                        </th>
+
+                        <th>
+                            Versioning
+                        </th>
+
+                        <th>
+                            Risk
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for item in s3_result %}
+
+                    {% set level =
+                        item.get(
+                            "risk",
+                            "Low"
+                        )|lower
+                    %}
+
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+
+                                {{ item.get(
+                                    "name",
+                                    "S3 Bucket"
+                                ) }}
+
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.get(
+                                "region",
+                                "Unknown"
+                            ) }}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if item.get("public_access") %}
+
+                                <span class="status-danger">
+                                    Public
+                                </span>
+
+                            {% else %}
+
+                                <span class="status-good">
+                                    Private
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if item.get("encryption") %}
+
+                                <span class="status-good">
+                                    Enabled
+                                </span>
+
+                            {% else %}
+
+                                <span class="status-danger">
+                                    Disabled
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if item.get("versioning") %}
+
+                                <span class="status-good">
+                                    Enabled
+                                </span>
+
+                            {% else %}
+
+                                <span class="status-warning">
+                                    Disabled
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            <span class="risk {{ level }}">
+                                {{ level|upper }}
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="6"
+                            class="table-empty">
+
+                            No S3 data available.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         SECURITY GROUPS
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    NETWORK SECURITY
+                </span>
+
+                <h2>
+                    Security Group Analysis
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Security Group
+                        </th>
+
+                        <th>
+                            Port
+                        </th>
+
+                        <th>
+                            Source
+                        </th>
+
+                        <th>
+                            Risk
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for item in sg_result %}
+
+                    {% set level =
+                        item.get(
+                            "risk",
+                            "Low"
+                        )|lower
+                    %}
+
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+
+                                {{ item.get(
+                                    "name",
+                                    "Security Group"
+                                ) }}
+
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.get(
+                                "port",
+                                "Unknown"
+                            ) }}
+
+                        </td>
+
+
+                        <td>
+
+                            <code>
+
+                                {{ item.get(
+                                    "source",
+                                    "Unknown"
+                                ) }}
+
+                            </code>
+
+                        </td>
+
+
+                        <td>
+
+                            <span class="risk {{ level }}">
+                                {{ level|upper }}
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="4"
+                            class="table-empty">
+
+                            No security-group data available.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         SCAN HISTORY
+    ====================================================== -->
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <div>
+
+                <span class="section-label">
+                    SECURITY MONITORING
+                </span>
+
+                <h2>
+                    Scan History
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Scan
+                        </th>
+
+                        <th>
+                            Date
+                        </th>
+
+                        <th>
+                            Time
+                        </th>
+
+                        <th>
+                            Score
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            High
+                        </th>
+
+                        <th>
+                            Medium
+                        </th>
+
+                        <th>
+                            Low
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for item in scan_history %}
+
+                    {% if item is mapping %}
+
+                        <tr>
+
+                            <td>
+
+                                <strong>
+
+                                    #{{ item.get(
+                                        "scan_number",
+                                        loop.index
+                                    ) }}
+
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {{ item.get(
+                                    "date",
+                                    "--"
+                                ) }}
+
+                            </td>
+
+
+                            <td>
+
+                                {{ item.get(
+                                    "time",
+                                    "--"
+                                ) }}
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+
+                                    {{ item.get(
+                                        "score",
+                                        "--"
+                                    ) }}/100
+
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {{ item.get(
+                                    "status",
+                                    "--"
+                                ) }}
+
+                            </td>
+
+
+                            <td>
+                                {{ item.get("high", 0) }}
+                            </td>
+
+
+                            <td>
+                                {{ item.get("medium", 0) }}
+                            </td>
+
+
+                            <td>
+                                {{ item.get("low", 0) }}
+                            </td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+
+                            <td colspan="8">
+
+                                {{ item }}
+
+                            </td>
+
+                        </tr>
+
+                    {% endif %}
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="8"
+                            class="table-empty">
+
+                            No previous cloud scans recorded.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         ACTIONS
+    ====================================================== -->
+
+    <section class="report-actions-section">
+
+        <div>
+
+            <span class="section-label">
+                SECURITY REPORTING
+            </span>
+
+            <h2>
+                Cloud Security Report
+            </h2>
+
+            <p>
+                Review your findings, run another scan,
+                or generate a downloadable security report.
+            </p>
+
+        </div>
+
+
+        <div class="report-actions">
+
+            <a href="{{ url_for('dashboard') }}"
+               class="action-btn secondary">
+
+                ← Back to Dashboard
+
+            </a>
+
+
+            <a href="{{ url_for('scan') }}"
+               class="action-btn">
+
+                🔄 Run Cloud Scan Again
+
+            </a>
+
+
+            <a href="{{ url_for('download_report', type='cloud') }}"
+               class="action-btn primary">
+
+                📄 Download Cloud PDF
+
+            </a>
+
+        </div>
+
+    </section>
+
+
+</main>
+
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer>
+
+    <strong>
+        CyberGuardX
+    </strong>
+
+    <p>
+        Scan • Detect • Protect
+    </p>
+
+    <p>
+        Intelligent Cloud Security Platform
+    </p>
+
+</footer>
+
+
+</body>
+
+</html>

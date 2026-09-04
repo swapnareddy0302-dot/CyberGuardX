@@ -1,101 +1,463 @@
+# ============================================================
+# CyberGuardX
+# Security Alert Engine
+# Cloud Security Monitoring
+# ============================================================
+
 from datetime import datetime
 
 
 class AlertEngine:
 
-    def generate_alerts(self, iam_result, ec2_result, s3_result, sg_result):
+    # ========================================================
+    # TIME HELPER
+    # ========================================================
+
+    @staticmethod
+    def current_time():
+        return datetime.now().strftime("%H:%M:%S")
+
+
+    # ========================================================
+    # SAFE VALUE HELPER
+    # ========================================================
+
+    @staticmethod
+    def get_value(item, *keys, default="Unknown"):
+
+        if not isinstance(item, dict):
+            return default
+
+        for key in keys:
+
+            value = item.get(key)
+
+            if value is not None and str(value).strip() != "":
+                return value
+
+        return default
+
+
+    # ========================================================
+    # ADD ALERT
+    # ========================================================
+
+    @staticmethod
+    def add_alert(
+        alerts,
+        severity,
+        service,
+        message
+    ):
+
+        alerts.append({
+
+            "severity": severity,
+
+            "service": service,
+
+            "message": message,
+
+            "time": AlertEngine.current_time()
+
+        })
+
+
+    # ========================================================
+    # GENERATE ALERTS
+    # ========================================================
+
+    def generate_alerts(
+        self,
+        iam_result,
+        ec2_result,
+        s3_result,
+        sg_result
+    ):
 
         alerts = []
 
-      
-        # IAM Alerts
-      
+
+        # ====================================================
+        # SAFETY
+        # ====================================================
+
+        if not isinstance(iam_result, list):
+            iam_result = []
+
+        if not isinstance(ec2_result, list):
+            ec2_result = []
+
+        if not isinstance(s3_result, list):
+            s3_result = []
+
+        if not isinstance(sg_result, list):
+            sg_result = []
+
+
+        # ====================================================
+        # IAM SECURITY ALERTS
+        # ====================================================
+
         for user in iam_result:
 
-            username = user.get("name", "Unknown User")
+            if not isinstance(user, dict):
+                continue
 
-            if not user.get("mfa_enabled"):
 
-                alerts.append({
-                    "severity": "Critical",
-                    "service": "IAM",
-                    "message": f"{username} has MFA disabled",
-                    "time": datetime.now().strftime("%H:%M:%S")
-                })
+            username = self.get_value(
 
-            if user.get("is_admin"):
+                user,
 
-                alerts.append({
-                    "severity": "High",
-                    "service": "IAM",
-                    "message": f"{username} has Administrator privileges",
-                    "time": datetime.now().strftime("%H:%M:%S")
-                })
+                "name",
+                "username",
+                "user",
+                "user_name",
 
-            if not user.get("active"):
+                default="Unknown User"
+            )
 
-                alerts.append({
-                    "severity": "Medium",
-                    "service": "IAM",
-                    "message": f"{username} account is inactive",
-                    "time": datetime.now().strftime("%H:%M:%S")
-                })
 
-     
-        # EC2 Alerts
-        
+            # ------------------------------------------------
+            # MFA DISABLED
+            # ------------------------------------------------
+
+            if user.get("mfa_enabled") is False:
+
+                self.add_alert(
+
+                    alerts,
+
+                    "Critical",
+
+                    "IAM",
+
+                    f"{username} has MFA disabled"
+                )
+
+
+            # ------------------------------------------------
+            # ADMINISTRATOR PRIVILEGES
+            # ------------------------------------------------
+
+            if user.get("is_admin") is True:
+
+                self.add_alert(
+
+                    alerts,
+
+                    "High",
+
+                    "IAM",
+
+                    f"{username} has Administrator privileges"
+                )
+
+
+            # ------------------------------------------------
+            # INACTIVE ACCOUNT
+            # ------------------------------------------------
+
+            status = str(
+                user.get("status", "")
+            ).strip().lower()
+
+
+            if status == "inactive":
+
+                self.add_alert(
+
+                    alerts,
+
+                    "Medium",
+
+                    "IAM",
+
+                    f"{username} account is inactive"
+                )
+
+
+        # ====================================================
+        # EC2 SECURITY ALERTS
+        # ====================================================
+
         for instance in ec2_result:
 
-            if instance.get("risk") == "High":
+            if not isinstance(instance, dict):
+                continue
 
-                instance_id = instance.get("instance_id", "Unknown Instance")
 
-                alerts.append({
-                    "severity": "High",
-                    "service": "EC2",
-                    "message": f"{instance_id} is publicly accessible",
-                    "time": datetime.now().strftime("%H:%M:%S")
-                })
+            instance_name = self.get_value(
 
-     
-        # S3 Alerts
-      
+                instance,
+
+                "name",
+                "instance_name",
+                "instance",
+                "instance_id",
+                "id",
+
+                default="Unknown Instance"
+            )
+
+
+            risk = str(
+                instance.get("risk", "Low")
+            ).strip().capitalize()
+
+
+            public_ip = instance.get("public_ip")
+
+
+            # ------------------------------------------------
+            # HIGH-RISK INSTANCE
+            # ------------------------------------------------
+
+            if risk == "High":
+
+                if public_ip:
+
+                    message = (
+                        f"{instance_name} is publicly "
+                        f"accessible at {public_ip}"
+                    )
+
+                else:
+
+                    message = (
+                        f"{instance_name} is classified "
+                        f"as high risk"
+                    )
+
+
+                self.add_alert(
+
+                    alerts,
+
+                    "High",
+
+                    "EC2",
+
+                    message
+                )
+
+
+            # ------------------------------------------------
+            # PUBLIC IP
+            # ------------------------------------------------
+
+            elif public_ip:
+
+                self.add_alert(
+
+                    alerts,
+
+                    "Medium",
+
+                    "EC2",
+
+                    f"{instance_name} has public IP "
+                    f"{public_ip}"
+                )
+
+
+        # ====================================================
+        # S3 SECURITY ALERTS
+        # ====================================================
+
         for bucket in s3_result:
 
-            if bucket.get("risk") == "High":
+            if not isinstance(bucket, dict):
+                continue
 
-                bucket_name = bucket.get("bucket_name", "Unknown Bucket")
 
-                alerts.append({
-                    "severity": "Medium",
-                    "service": "S3",
-                    "message": f"{bucket_name} bucket requires attention",
-                    "time": datetime.now().strftime("%H:%M:%S")
-                })
+            bucket_name = self.get_value(
 
-     
-        # Security Group Alerts
-      
+                bucket,
+
+                "name",
+                "bucket",
+                "bucket_name",
+                "bucketName",
+
+                default="Unknown Bucket"
+            )
+
+
+            risk = str(
+                bucket.get("risk", "Low")
+            ).strip().capitalize()
+
+
+            public_access = bucket.get(
+                "public_access"
+            )
+
+            encryption = bucket.get(
+                "encryption"
+            )
+
+
+            # ------------------------------------------------
+            # HIGH-RISK BUCKET
+            # ------------------------------------------------
+
+            if risk == "High":
+
+                self.add_alert(
+
+                    alerts,
+
+                    "High",
+
+                    "S3",
+
+                    f"{bucket_name} bucket requires "
+                    f"immediate security attention"
+                )
+
+
+            # ------------------------------------------------
+            # PUBLIC ACCESS
+            # ------------------------------------------------
+
+            if public_access is True:
+
+                self.add_alert(
+
+                    alerts,
+
+                    "High",
+
+                    "S3",
+
+                    f"{bucket_name} allows public access"
+                )
+
+
+            # ------------------------------------------------
+            # ENCRYPTION DISABLED
+            # ------------------------------------------------
+
+            if encryption is False:
+
+                self.add_alert(
+
+                    alerts,
+
+                    "Medium",
+
+                    "S3",
+
+                    f"{bucket_name} does not have encryption enabled"
+                )
+
+
+        # ====================================================
+        # SECURITY GROUP ALERTS
+        # ====================================================
+
         for group in sg_result:
 
-            if group.get("risk") == "High":
+            if not isinstance(group, dict):
+                continue
 
-                group_name = group.get("group_name", "Unknown Security Group")
 
-                alerts.append({
-                    "severity": "Critical",
-                    "service": "Security Group",
-                    "message": f"{group_name} has insecure inbound rules",
-                    "time": datetime.now().strftime("%H:%M:%S")
-                })
+            group_name = self.get_value(
 
-        # Information Alert
-       
-        alerts.append({
-            "severity": "Info",
-            "service": "System",
-            "message": "Security scan completed successfully",
-            "time": datetime.now().strftime("%H:%M:%S")
-        })
+                group,
+
+                "name",
+                "group",
+                "group_name",
+                "security_group",
+                "security_group_name",
+
+                default="Unknown Security Group"
+            )
+
+
+            port = self.get_value(
+
+                group,
+
+                "port",
+
+                default="Unknown"
+            )
+
+
+            source = self.get_value(
+
+                group,
+
+                "source",
+
+                default="Unknown"
+            )
+
+
+            risk = str(
+                group.get("risk", "Low")
+            ).strip().capitalize()
+
+
+            # ------------------------------------------------
+            # HIGH-RISK SECURITY GROUP
+            # ------------------------------------------------
+
+            if risk == "High":
+
+                self.add_alert(
+
+                    alerts,
+
+                    "Critical",
+
+                    "Security Group",
+
+                    f"{group_name} has insecure inbound "
+                    f"rules on port {port} from {source}"
+                )
+
+
+            # ------------------------------------------------
+            # MEDIUM-RISK SECURITY GROUP
+            # ------------------------------------------------
+
+            elif risk == "Medium":
+
+                self.add_alert(
+
+                    alerts,
+
+                    "Medium",
+
+                    "Security Group",
+
+                    f"{group_name} has a potentially risky "
+                    f"inbound rule on port {port} from {source}"
+                )
+
+
+        # ====================================================
+        # SCAN COMPLETION ALERT
+        # ====================================================
+
+        self.add_alert(
+
+            alerts,
+
+            "Info",
+
+            "System",
+
+            "Cloud security scan completed successfully"
+        )
+
+
+        # ====================================================
+        # RETURN ALERTS
+        # ====================================================
 
         return alerts
