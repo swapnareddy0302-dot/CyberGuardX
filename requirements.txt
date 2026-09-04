@@ -3,3 +3,4 @@ boto3==1.43.51
 psutil==7.2.2
 reportlab==5.0.0
 pillow==12.3.0
+psycopg[binary]>=3.2,<4
